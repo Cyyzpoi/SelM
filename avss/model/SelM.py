@@ -7,7 +7,7 @@ from model.resnet import B2_ResNet
 from model.pvt import pvt_v2_b5
 from einops import rearrange,repeat
 from model.layers import Decoder
-from avss.model.BCSM import BCSM,TemporalAttention_V2A
+from avss.model.BCSM import BCSM
 from model.fusion_layer import All_Fusion_Block
 
 
@@ -177,12 +177,6 @@ class SelM_PVT(nn.Module):
                                      nn.GroupNorm(32,256))
         self.in_proj1 = nn.Sequential(nn.Conv2d(64,256,kernel_size=1),
                                      nn.GroupNorm(32,256))
-        
-        
-        
-        
-        
-        
         
         self.decoder=Decoder(token_dim=256,num_token=2)
         self.audio_proj=nn.Linear(128,256)

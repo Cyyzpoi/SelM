@@ -8,7 +8,7 @@ import numpy as np
 import argparse
 import logging
 import torch.cuda.amp as amp
-import model.misc as utils
+import avss.utils.misc as utils
 from avss.model.SelM import SelM_R50
 
 from config import cfg

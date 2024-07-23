@@ -7,9 +7,8 @@ import numpy as np
 import argparse
 import logging
 import torch.cuda.amp as amp
-import model.misc as utils
-from avss.model.SelM import SelM_R50
-# from model.pvt_avs import AudioClip_AVS_Model
+import avss.utils.misc as utils
+from avss.model.SelM import SelM_R50,SelM_PVT
 from config import cfg
 from color_dataloader import V2Dataset
 from torchvggish import vggish
@@ -21,7 +20,7 @@ from utils.compute_color_metrics import calc_color_miou_fscore
 from utils.system import setup_logging
 import pdb
 
-from model.misc import all_gather
+from avss.utils.misc import all_gather
 
 
 
