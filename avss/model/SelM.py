@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from model.resnet import B2_ResNet
 from model.pvt import pvt_v2_b5
 from einops import rearrange,repeat
-from model.layers import Decoder
+from avss.model.decoder import Decoder
 from avss.model.BCSM import BCSM
 from model.fusion_layer import All_Fusion_Block
 
@@ -78,15 +78,6 @@ class SelM_R50(nn.Module):
         
         BT,C,h,w=x.shape
         
-        
-        
-        
-        
-        
-        a_fea_list=[None]*4
-        
-        
-
         audio_feature=self.audio_proj(audio_embed)
         audio_feature=self.audio_norm(audio_feature)
         input_shape=x_in.shape[-2:]
@@ -130,7 +121,7 @@ class SelM_R50(nn.Module):
         fuse_mask = fuse_mask *vid_temporal_mask_flag
        
         
-        return fuse_mask,feature_map_list,a_fea_list,maps
+        return fuse_mask,feature_map_list,maps
     
     def initialize_weights(self):
         res50 = models.resnet50(pretrained=False)
@@ -232,9 +223,6 @@ class SelM_PVT(nn.Module):
         audio_embed = audio_embed.view(1,BT,256)
         feature_map_list,audio_embed = self.tem_att([x1,x2,x3,x4],audio_embed)
         
-        a_fea_list=[None]*4
-        
-
         
         fuse_mask,maps=self.decoder(feature_map_list,audio_embed,audio_mask)
         fuse_mask=F.interpolate(fuse_mask,input_shape,mode='bilinear',align_corners=True)
@@ -242,7 +230,7 @@ class SelM_PVT(nn.Module):
         
         fuse_mask = fuse_mask*vid_temporal_mask_flag
         
-        return fuse_mask,feature_map_list,a_fea_list,maps
+        return fuse_mask,feature_map_list,maps
  
     
     

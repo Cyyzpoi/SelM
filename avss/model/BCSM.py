@@ -151,7 +151,8 @@ class BCSM(nn.Module):
 		video_gate3 = video_gate3.reshape(bt, 256)
 		video_gate4 = video_gate4.transpose(1, 0)
 		video_gate4 = video_gate4.reshape(bt, 256)
-        # gamma = F.softmax(gamma)
+  
+  
 		x1 = x1 + audio_gate1 * x1 * self.gamma
 		x2 = x2 + audio_gate2 * x2 * self.gamma
 		x3 = x3 + audio_gate3 * x3 * self.gamma

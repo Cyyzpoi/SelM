@@ -3,87 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import trunc_normal_
-from model.backbone import MMBasicLayer
-# from dual_decoder import Transformer_Fusion
-from model.fusion_layer import All_Fusion_Block
-# from utils.transformer import AVSTransformerDecoder
-from mamba_ssm import Mamba
 
-# class interframe_att(nn.Module):
-#     def __init__(self) -> None:
-#         super().__init__()
-#         # self.att=nn.MultiheadAttention(embed_dim=token_dim,num_heads=num_heads,batch_first=True)
-#         self.att = Mamba(d_model=256,device='cuda')
-#     def forward(self,token):
-#         BT,N,C=token.shape
-#         # token=token.reshape(BT//5,-1,C)
-#         token=self.att(token)
-#         # token=self.layernorm1(token+attn)
-#         # ffn_out=self.ffn(token)
-#         # token=self.layernorm2(token+ffn_out)
-#         # token=token.reshape(BT,N,C)
-        
-#         return token
-
-
-
-class init_attn_layer(nn.Module):
-    def __init__(self,token_dim,num_heads,hidden_dim):
-        super().__init__()
-        self.self_attn=nn.MultiheadAttention(token_dim,num_heads,bias=True,batch_first=True)
-        self.cross_attn=nn.MultiheadAttention(token_dim,num_heads,bias=True,batch_first=True)
-        self.ffn= nn.Sequential(
-            nn.Linear(token_dim,hidden_dim),
-            nn.GELU(),
-            nn.Linear(hidden_dim,token_dim)
-        )
-        self.layernorm1=nn.LayerNorm(token_dim)
-        self.layernorm2=nn.LayerNorm(token_dim)
-        self.layernorm3=nn.LayerNorm(token_dim)
-        
-    def forward(self,token,image_embed):
-        cross_attn=self.cross_attn(token,image_embed,image_embed)[0]
-        token = self.layernorm1(token+cross_attn)
-        self_attn=self.self_attn(token,token,token)[0]
-        token = self.layernorm2(token+self_attn)
-        ffn_out=self.ffn(token)
-        token=self.layernorm3(ffn_out+token)
-        return token
-
-
-
-class token_init(nn.Module):
-    def __init__(self,num_layers,token_num,token_dim=512,num_heads=8,hidden_dim=2048):
-        super().__init__()
-        self.num_layers=num_layers
-        self.token_num=token_num
-        self.token_dim=token_dim
-        self.num_heads=num_heads
-        self.hidden_dim=hidden_dim
-        self.token=nn.Embedding(token_num,token_dim)
-        self.layers=nn.ModuleList([init_attn_layer(token_dim,num_heads,hidden_dim)
-                                   for i in range(num_layers)])
-        
-        self._reset_parameters()
-        
-    def _reset_parameters(self):
-        for p in self.parameters():
-            if p.dim()>1:
-                nn.init.xavier_uniform_(p)
-    
-    def forward(self,image_embed):
-        bs = image_embed.shape[0]
-        token = self.token.weight[None,:,:].expand(bs,-1,-1)
-        for layer in self.layers:
-            token = layer(token,image_embed)
-        return token
-
-
-
-
-
-
-# from query_gen import AttentionGenerator
 def l2norm(X, dim=-1, eps=1e-12):
     """
     L2-normalize columns of X
@@ -164,70 +84,43 @@ class Fusion(nn.Module):
         return x
 
 class DProjector(nn.Module):
-    def __init__(self, text_dim=512, in_dim=512, kernel_size=1):
+    def __init__(self, audio_dim=512, in_dim=512, kernel_size=1):
         super().__init__()
         self.in_dim = in_dim
         self.kernel_size = kernel_size
         # visual projector
         
-        self.vis = nn.Sequential(  # os16 -> os4
+        self.vis = nn.Sequential(  
             nn.Upsample(scale_factor=2, mode='bilinear'),
             conv_layer(in_dim, in_dim, 3, padding=1),
             nn.Upsample(scale_factor=2, mode='bilinear'),
             conv_layer(in_dim, in_dim, 3, padding=1),
             nn.Conv2d(in_dim, in_dim, 1))
 
-        # textual projector
+        # audio projector
         out_dim = 71*256
-        self.txt = nn.Linear(text_dim, out_dim)
+        self.audio_linear = nn.Linear(audio_dim, out_dim)
         
-        # self.weight_proj = nn.Linear(10,71)
-        # self.bias_proj = nn.Linear(10,71)
         
         
 
-    def forward(self, x, text):
+    def forward(self, x, audio):
         '''
             x: b, 512, 104, 104
             text: b, 512
         '''
-        x = self.vis(x)  # Eq. 8
+        x = self.vis(x)  
 
         B, C, H, W = x.size()
         # 1, b*256, 104, 104
-        # x = x.reshape(1, B * C, H, W)
-        # x = repeat(x,"m bc h w -> (repeat m) bc h w",repeat=71)
-        # txt: b, 1, (256*3*3 + 1) -> b, 1, 256, 3, 3 / b
-        text = self.txt(text) # Eq. 8
+        audio = self.audio_linear(audio) 
 
-        # weight, bias = text[:, :-1], text[:, -1]
         
-        text = text.view(B,71,256)
+        audio = audio.view(B,71,256)
         
         out = torch.einsum(
-            'bqc,bchw->bqhw', text, x)
+            'bqc,bchw->bqhw', audio, x)
         
-        
-        
-        
-        # if weight.shape[0] != 10:
-        #     res = 10 - weight.shape[0]
-        #     weight = torch.cat([weight,torch.zeros((res,256),device='cuda')],dim=0)
-        #     bias = torch.cat([bias,torch.zeros((res),device='cuda')])
-        
-        # weight=self.weight_proj(weight.transpose(0,1))
-        # bias = self.bias_proj(bias)
-        
-        # weight = weight.reshape(71, C, self.kernel_size, self.kernel_size)
-        # Conv2d - 1, b*256, 104, 104 -> 1, b, 104, 104
-        # out = F.conv2d(x,
-        #             weight,
-        #             padding=1,
-        #             groups=1,
-        #             bias=bias)
-            
-        # b, 1, 104, 104
-        # out = out.transpose(0,1)
         return out
 
 
@@ -425,11 +318,6 @@ class Decoder(nn.Module):
         token_dim = token_dim
         self.tokens = nn.Embedding(num_token, token_dim)
         trunc_normal_(self.tokens.weight, std=0.02)
-        # self.query_attn=AttentionGenerator(num_layers=6,embed_dim=512,query_num=2)
-        # self.query_linear=nn.Linear(256,512)
-
-        # self.token_init=token_init(num_layers=2,token_num=num_token,num_heads=8,token_dim=token_dim)
-        # self.token_linear=nn.Linear(1024,token_dim)
         
         dims = [256,256,256,256]
         # dims=[2048,1024,512,256]
@@ -456,86 +344,32 @@ class Decoder(nn.Module):
                                        bias=True)
         self.layers = nn.ModuleList(self.layers)
         self.fuses = []
-        # for dim in [dims[0], dims[1], dims[3]]:
-        #     self.fuses.append(Fusion(dim, token_dim, token_dim, bias=True))
+
         self.fuses.append(Fusion(dims[0],dims[1],token_dim,bias=True))
         self.fuses.append(Fusion(dims[2],token_dim,token_dim,bias=True))
         self.fuses.append(Fusion(dims[3],token_dim,token_dim,bias=True))
         self.fuses = nn.ModuleList(self.fuses)
         
-        # self.transfuse=[]
-        # self.transfuse.append(All_Fusion_Block(dim=token_dim))
-        # self.transfuse.append(All_Fusion_Block(dim=token_dim))
-        # self.transfuse.append(All_Fusion_Block(dim=token_dim))
-        # self.transfuse=nn.ModuleList(self.transfuse)
+    
         
-        # self.loss_func=nn.CrossEntropyLoss()
-        # self.global_fuse=[]
-        # self.global_fuse.append(Fusion(token_dim,dims[1],token_dim,bias=True))
-        # self.global_fuse.append(Fusion(token_dim,dims[2],token_dim,bias=True))
-        # self.global_fuse.append(Fusion(token_dim,dims[3],token_dim,bias=True))
-        # self.fusion=FusionLayer(dim=256)
-        # self.global_fuse=nn.ModuleList(self.global_fuse)
-        # self.layernorm=nn.LayerNorm(256)
-        
-        # self.interatt=[]
-        # self.interatt.append(interframe_att())
-        # self.interatt.append(interframe_att())
-        # self.interatt.append(interframe_att())
-        # self.interatt=nn.ModuleList(self.interatt)
-        
-        self.proj = DProjector(text_dim=token_dim, in_dim=token_dim)
-        # self.mlp = MLP(num_token, 2048, token_dim, 3)
-        # self.fc = nn.Sequential(
-        #     nn.Conv2d(token_dim, 128, kernel_size=3, stride=1, padding=1),
-        #     nn.Upsample(scale_factor=4, mode="bilinear"),
-        #     nn.Conv2d(128, 32, kernel_size=3, stride=1, padding=1),
-        #     nn.ReLU(True),
-        #     nn.Conv2d(32, 71, kernel_size=1,
-        #               stride=1, padding=0, bias=False)
-        # )
+        self.proj = DProjector(audio_dim=token_dim, in_dim=token_dim)
         
     def forward(self, vis, text, pad_mask):
-        # token_image=self.token_linear(image_embed.unsqueeze(1))
-        # bs=token_image.shape[0]
-        # tokens=self.token_init(token_image)
+        
         x_c4, x_c3, x_c2, x_c1 = vis
         tokens = self.tokens.weight[None,...].expand(x_c1.shape[0], -1, -1)
-        # x4,x3,x2,x1=global_vis
-        # tokens=tokens+self.tokens.weight[None, :, :].expand(x_c4.shape[0], -1, -1)
-        # tokens = self.tokens.weight[None,...].expand(x_c1.shape[0], -1, -1)
+        
         maps = []
         v = x_c4
-        # v = vis
         for load, layer,fuse,v_  in zip(self.layers,[self.cgattention1,self.cgattention2,self.cgattention3],self.fuses,[x_c3,x_c2,x_c1]):
             v = fuse(v, v_)
-            # v,text = transfuse(v,text,pad_mask)
-            # tokens=inter_att(tokens)
+
             tokens, pe = load(tokens, text, pad_mask)
             tokens, hitmap = layer(tokens, v, pe=pe)
             
             maps.append(hitmap)
-            
-        
-        # for load, layer,fuse,v_ in zip(self.layers,[self.cgattention1,self.cgattention2,self.cgattention3],self.fuses,[x_c3,x_c2,x_c1]):
-        #     v = fuse(v, v_)
-        #     # v,text = transfuse(v,text,pad_mask)
-        #     tokens, pe = load(tokens, text, pad_mask)
-        #     tokens, hitmap = layer(tokens, v, pe=pe)
-        #     # tokens=inter_att(tokens)
-        #     maps.append(hitmap)
-        
-        # v=v.flatten(2).transpose(1,2)
-        # v=self.fusion(v,56,56,text,pad_mask)
-        # v=self.layernorm(v[3])
-        # v=v.view(-1, 56, 56, 256).permute(0, 3, 1, 2).contiguous()
         
         out = self.proj(v, tokens[:,-1])
         
-        # pred_feature = torch.einsum(
-        #     'bqc,bchw->bqhw', tokens, v)
-        # pred_feature = self.mlp(pred_feature)
-        # pred_mask = v + pred_feature
-        # out = self.fc(pred_mask)
 
         return out, maps

@@ -12,7 +12,7 @@ from avss.model.SelM import SelM_R50,SelM_PVT
 from config import cfg
 from color_dataloader import V2Dataset
 from torchvggish import vggish
-from loss import IouSemanticAwareLoss
+from loss import Seg_Loss
 
 from utils import pyutils
 from utils.utility import logger
@@ -20,7 +20,6 @@ from utils.compute_color_metrics import calc_color_miou_fscore
 from utils.system import setup_logging
 import pdb
 
-from avss.utils.misc import all_gather
 
 
 
@@ -104,7 +103,7 @@ if __name__ == "__main__":
     if not os.path.exists(script_path):
         os.makedirs(script_path, exist_ok=True)
 
-    scripts_to_save = ['train.sh', 'train.py', 'test.sh', 'test.py', 'config.py', 'color_dataloader.py', './model/ResNet_AVSModel.py', './model/PVT_AVSModel.py', 'loss.py','./model/audioclip_avs.py','./model/layers.py']
+    scripts_to_save = [ 'train.py', 'test.py', 'config.py', 'color_dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/fusion_layer.py','./model/decoder.py']
     for script in scripts_to_save:
         dst_path = os.path.join(script_path, script)
         try:
@@ -132,7 +131,15 @@ if __name__ == "__main__":
 
     # Model
     
-    model=SelM_R50(config=cfg)
+    # model=SelM_R50(config=cfg)
+    if (args.visual_backbone).lower() == "resnet":
+        model = SelM_R50(config=cfg)
+        print('==> Use ResNet50 as the visual backbone...')
+    elif (args.visual_backbone).lower() == "pvt":
+        model = SelM_PVT(config=cfg)
+        print('==> Use pvt-v2 as the visual backbone...')
+    else:
+        raise NotImplementedError("only support the resnet50 and pvt-v2") 
     
     # model = torch.nn.DataParallel(model).cuda()
     model.to(args.gpu)
@@ -211,11 +218,8 @@ if __name__ == "__main__":
                 audio_feature = audio_feature * vid_temporal_mask_flag.unsqueeze(-1)
             # pdb.set_trace()
             with amp.autocast():
-                output, v_map_list, a_fea_list,hitmaps= model(imgs, audio_feature, vid_temporal_mask_flag) # [bs*5, 24, 224, 224]
-                loss, loss_dict = IouSemanticAwareLoss(output, label, a_fea_list, v_map_list, gt_temporal_mask_flag, \
-                                            sa_loss_flag=args.masked_av_flag, lambda_1=args.lambda_1, count_stages=args.masked_av_stages, \
-                                            mask_pooling_type=args.mask_pooling_type, threshold=args.threshold_flag, norm_fea=args.norm_fea_flag, \
-                                            closer_flag=args.closer_flag, euclidean_flag=args.euclidean_flag, kl_flag=args.kl_flag,loss_type='bce',hitmaps=hitmaps)
+                output, v_map_list,hitmaps= model(imgs, audio_feature, vid_temporal_mask_flag) # [bs*5, 24, 224, 224]
+                loss, loss_dict = Seg_Loss(output, label, loss_type='bce',hitmaps=hitmaps)
 
             avg_meter_total_loss.add({'total_loss': loss.item()})
             avg_meter_iou_loss.add({'iou_loss': loss_dict['iou_loss']})
@@ -272,7 +276,7 @@ if __name__ == "__main__":
                     #! notice:
                     audio_feature = audio_feature * vid_temporal_mask_flag.unsqueeze(-1)
 
-                    output, _, _,_= model(imgs, audio_feature, vid_temporal_mask_flag) # [bs*5, 21, 224, 224]
+                    output, _, _= model(imgs, audio_feature, vid_temporal_mask_flag) # [bs*5, 21, 224, 224]
                     
                     _miou_pc, _fscore_pc, _cls_pc ,_= calc_color_miou_fscore(output, mask)
                     # compute miou, J-measure

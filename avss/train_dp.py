@@ -14,7 +14,7 @@ from avss.model.SelM import SelM_R50
 from config import cfg
 from color_dataloader import V2Dataset
 from torchvggish import vggish
-from loss import IouSemanticAwareLoss
+from loss import Seg_Loss
 
 from utils import pyutils
 from utils.utility import logger
@@ -226,7 +226,7 @@ if __name__ == "__main__":
             # pdb.set_trace()
             with amp.autocast():
                 output, v_map_list, a_fea_list,hitmaps= model(imgs, audio_feature, vid_temporal_mask_flag) # [bs*5, 24, 224, 224]
-                loss, loss_dict = IouSemanticAwareLoss(output, label, a_fea_list, v_map_list, gt_temporal_mask_flag, \
+                loss, loss_dict = Seg_Loss(output, label, a_fea_list, v_map_list, gt_temporal_mask_flag, \
                                             sa_loss_flag=args.masked_av_flag, lambda_1=args.lambda_1, count_stages=args.masked_av_stages, \
                                             mask_pooling_type=args.mask_pooling_type, threshold=args.threshold_flag, norm_fea=args.norm_fea_flag, \
                                             closer_flag=args.closer_flag, euclidean_flag=args.euclidean_flag, kl_flag=args.kl_flag,loss_type='bce',hitmaps=hitmaps)
