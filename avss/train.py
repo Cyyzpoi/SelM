@@ -18,7 +18,6 @@ from utils import pyutils
 from utils.utility import logger
 from utils.compute_color_metrics import calc_color_miou_fscore
 from utils.system import setup_logging
-import pdb
 
 
 
@@ -51,19 +50,6 @@ if __name__ == "__main__":
     parser.add_argument("--start_eval_epoch", default=0, type=int)
     parser.add_argument("--eval_interval", default=1, type=int)
 
-    parser.add_argument('--masked_av_flag', action='store_true', default=False, help='additional sa/masked_va loss for five frames')
-    parser.add_argument("--lambda_1", default=0, type=float, help='weight for balancing loss')
-    parser.add_argument("--masked_av_stages", default=[], nargs='+', type=int, help='compute sa/masked_va loss in which stages: [0, 1, 2, 3]')
-    parser.add_argument('--threshold_flag', action='store_true', default=False, help='whether thresholding the generated masks')
-    parser.add_argument("--mask_pooling_type", default='avg', type=str, help='the manner to downsample predicted masks')
-    parser.add_argument('--norm_fea_flag', action='store_true', default=False, help='normalize audio-visual features')
-    parser.add_argument('--closer_flag', action='store_true', default=False, help='use closer loss for masked_va loss')
-    parser.add_argument('--euclidean_flag', action='store_true', default=False, help='use euclidean distance for masked_va loss')
-    parser.add_argument('--kl_flag', action='store_true', default=False, help='use kl loss for masked_va loss')
-
-    parser.add_argument("--tpavi_stages", default=[], nargs='+', type=int, help='add tpavi block in which stages: [0, 1, 2, 3]')
-    parser.add_argument("--tpavi_vv_flag", action='store_true', default=False, help='visual-visual self-attention')
-    parser.add_argument("--tpavi_va_flag", action='store_true', default=False, help='visual-audio cross-attention')
 
     parser.add_argument("--weights", type=str, default='', help='path of trained model')
     parser.add_argument('--log_dir', default='./train_logs', type=str)

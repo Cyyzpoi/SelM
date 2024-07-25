@@ -6,8 +6,7 @@ import torch
 import numpy as np
 import argparse
 import logging
-from avss.model.SelM import SelM_R50
-# from model.pvt_avs import AudioClip_AVS_Model
+from avss.model.SelM import SelM_R50,SelM_PVT
 from config import cfg
 from color_dataloader import V2Dataset
 from torchvggish import vggish
@@ -46,9 +45,6 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", default=8, type=int)
     parser.add_argument("--wt_dec", default=5e-4, type=float)
 
-    parser.add_argument("--tpavi_stages", default=[], nargs='+', type=int, help='add non-local block in which stages: [0, 1, 2, 3')
-    parser.add_argument("--tpavi_vv_flag", action='store_true', default=False, help='visual-visual self-attention')
-    parser.add_argument("--tpavi_va_flag", action='store_true', default=False, help='visual-audio cross-attention')
 
     parser.add_argument("--weights",type=str)
     parser.add_argument("--save_pred_mask", action='store_true', default=True, help="save predited masks or not")
@@ -72,7 +68,7 @@ if __name__ == "__main__":
     if not os.path.exists(script_path):
         os.makedirs(script_path, exist_ok=True)
     
-    scripts_to_save = ['train.sh', 'train.py', 'test.sh', 'test.py', 'config.py', 'color_dataloader.py', './model/ResNet_AVSModel.py', './model/PVT_AVSModel.py', 'loss.py']
+    scripts_to_save = ['train.py', 'test.py', 'config.py', 'color_dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/decoder.py']
     for script in scripts_to_save:
         dst_path = os.path.join(script_path, script)
         try:
@@ -94,9 +90,18 @@ if __name__ == "__main__":
 
     # Model
 
-    model = SelM_R50(config=cfg)
+    if (args.visual_backbone).lower() == "resnet":
+        model = SelM_R50(config=cfg)
+        print('==> Use ResNet50 as the visual backbone...')
+    elif (args.visual_backbone).lower() == "pvt":
+        model = SelM_PVT(config=cfg)
+        print('==> Use pvt-v2 as the visual backbone...')
+    else:
+        raise NotImplementedError("only support the resnet50 and pvt-v2")
     
-    model.load_state_dict(torch.load('/home/supermicro-2/AVS/AudioClip-AVS/avss/train_logs/AVSS_20240402-225123_3/checkpoints/epoch_29.pth')['model_state_dict'])
+    # model = SelM_R50(config=cfg)
+    
+    # model.load_state_dict(torch.load('./avss/train_logs/AVSS_20240402-225123_3/checkpoints/epoch_29.pth')['model_state_dict'])
     model = torch.nn.DataParallel(model,device_ids=[0]).cuda()
     # logger.info('Load trained model %s'%args.weights)
 

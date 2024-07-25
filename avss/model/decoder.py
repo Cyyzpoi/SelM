@@ -105,14 +105,12 @@ class DProjector(nn.Module):
         
 
     def forward(self, x, audio):
-        '''
-            x: b, 512, 104, 104
-            text: b, 512
-        '''
+        #x: BT, C, H, W
+        #audio: BT, C
         x = self.vis(x)  
 
         B, C, H, W = x.size()
-        # 1, b*256, 104, 104
+        
         audio = self.audio_linear(audio) 
 
         
@@ -182,30 +180,7 @@ class CrossAttn(nn.Module):
         out = self.proj_drop(out)
         return out
 
-class OriLoadToken(nn.Module):
-    def __init__(self, token_dim, bias, drop) -> None:
-        super().__init__()
-        self.cross_attn = CrossAttn(
-            q_dim=token_dim,
-            kv_dim=256,
-            hidden_dim=token_dim,
-            num_heads=1,
-            out_dim=token_dim,
-            qkv_bias=bias,
-            attn_drop=drop,
-            proj_drop=drop,
-        )
-        self.normq = nn.LayerNorm(token_dim)
-        self.normk = nn.LayerNorm(256)
 
-        self.normq = nn.LayerNorm(token_dim)
-        self.normk = nn.LayerNorm(256)
-
-    def forward(self, tokens, text, pad_mask):
-        tokens = tokens + self.cross_attn(query=self.normq(tokens), key=self.normk(text.permute(0,2,1)), mask=pad_mask[...,0])
-        return tokens
-
-# updated version
 class LoadToken(nn.Module):
     def __init__(self, token_dim, bias, drop) -> None:
         super().__init__()
@@ -224,9 +199,9 @@ class LoadToken(nn.Module):
         self.norm = nn.LayerNorm(token_dim)
         self.mlp = Mlp(token_dim, token_dim*2, token_dim)
 
-    def forward(self, tokens, text, pad_mask):
+    def forward(self, tokens, audio, audio_mask):
         ltoken, ttoken = torch.split(tokens, [tokens.shape[1]-1,1], dim=1)
-        ttoken = ttoken + self.cross_attn(query=self.normq(ttoken), key=self.normk(text.permute(0,2,1)), mask=pad_mask[...,0])
+        ttoken = ttoken + self.cross_attn(query=self.normq(ttoken), key=self.normk(audio.permute(0,2,1)), mask=audio_mask[...,0])
         tokens = torch.cat((ltoken, ttoken), dim=1)
         return tokens
 
@@ -244,9 +219,9 @@ class LoadLayer(nn.Module):
         self.positional_embedding = nn.Parameter(torch.randn(pe_shape**2, token_dim) / token_dim ** 0.5)
         self.pe_shape = pe_shape
 
-    def forward(self, tokens, text, pad_mask):
+    def forward(self, tokens, audio, audio_mask):
         if self.pe_shape >=14:
-            tokens = self.loadtoken(tokens, text, pad_mask)
+            tokens = self.loadtoken(tokens, audio, audio_mask)
             tokens = self.mlp(self.norm(tokens))
         return tokens, self.positional_embedding
 
@@ -321,7 +296,6 @@ class Decoder(nn.Module):
         
         dims = [256,256,256,256]
         # dims=[2048,1024,512,256]
-        # pe_shapes = [20, 40, 80]
         pe_shapes=[14,28,56]
 
         self.layers = []
@@ -354,7 +328,7 @@ class Decoder(nn.Module):
         
         self.proj = DProjector(audio_dim=token_dim, in_dim=token_dim)
         
-    def forward(self, vis, text, pad_mask):
+    def forward(self, vis, audio, audio_mask):
         
         x_c4, x_c3, x_c2, x_c1 = vis
         tokens = self.tokens.weight[None,...].expand(x_c1.shape[0], -1, -1)
@@ -364,7 +338,7 @@ class Decoder(nn.Module):
         for load, layer,fuse,v_  in zip(self.layers,[self.cgattention1,self.cgattention2,self.cgattention3],self.fuses,[x_c3,x_c2,x_c1]):
             v = fuse(v, v_)
 
-            tokens, pe = load(tokens, text, pad_mask)
+            tokens, pe = load(tokens, audio, audio_mask)
             tokens, hitmap = layer(tokens, v, pe=pe)
             
             maps.append(hitmap)

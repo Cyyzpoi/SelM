@@ -1,14 +1,12 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-import os
 import torch.nn.functional as F
 from model.resnet import B2_ResNet
 from model.pvt import pvt_v2_b5
-from einops import rearrange,repeat
 from avss.model.decoder import Decoder
 from avss.model.BCSM import BCSM
-from avss.model.DAM import All_Fusion_Block
+from avss.model.DAM import DAM_Fusion_Block
 
 
 class SelM_R50(nn.Module):
@@ -36,10 +34,10 @@ class SelM_R50(nn.Module):
         
     
         
-        self.DAM_Fusion1=All_Fusion_Block(dim=256)
-        self.DAM_Fusion2=All_Fusion_Block(dim=512)
-        self.DAM_Fusion3=All_Fusion_Block(dim=1024)
-        self.DAM_Fusion4=All_Fusion_Block(dim=2048)
+        self.DAM_Fusion1=DAM_Fusion_Block(dim=256)
+        self.DAM_Fusion2=DAM_Fusion_Block(dim=512)
+        self.DAM_Fusion3=DAM_Fusion_Block(dim=1024)
+        self.DAM_Fusion4=DAM_Fusion_Block(dim=2048)
         
         
         self.decoder=Decoder(num_token=2,token_dim=256)

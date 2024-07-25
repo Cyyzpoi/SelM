@@ -37,12 +37,6 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", default=8, type=int)
     parser.add_argument("--wt_dec", default=5e-4, type=float)
 
-    parser.add_argument("--tpavi_stages", default=[], nargs='+', type=int,
-                        help='add non-local block in which stages: [0, 1, 2, 3')
-    parser.add_argument("--tpavi_vv_flag", action='store_true',
-                        default=False, help='visual-visual self-attention')
-    parser.add_argument("--tpavi_va_flag", action='store_true',
-                        default=False, help='visual-audio cross-attention')
 
     parser.add_argument("--weights", type=str)
     parser.add_argument("--save_pred_mask", action='store_true',

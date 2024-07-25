@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partial
-from avss.model.DAM import All_Fusion_Block
+from avss.model.DAM import DAM_Fusion_Block
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.registry import register_model
 from timm.models.vision_transformer import _cfg
@@ -248,10 +248,10 @@ class PyramidVisionTransformerV2(nn.Module):
             setattr(self, f"block{i + 1}", block)
             setattr(self, f"norm{i + 1}", norm)
 
-        self.DAM_Fusion1=All_Fusion_Block(dim=64)
-        self.DAM_Fusion2=All_Fusion_Block(dim=128)
-        self.DAM_Fusion3=All_Fusion_Block(dim=320)
-        self.DAM_Fusion4=All_Fusion_Block(dim=512)
+        self.DAM_Fusion1=DAM_Fusion_Block(dim=64)
+        self.DAM_Fusion2=DAM_Fusion_Block(dim=128)
+        self.DAM_Fusion3=DAM_Fusion_Block(dim=320)
+        self.DAM_Fusion4=DAM_Fusion_Block(dim=512)
         
         # classification head
         # self.head = nn.Linear(embed_dims[3], num_classes) if num_classes > 0 else nn.Identity()

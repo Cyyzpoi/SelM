@@ -36,18 +36,6 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", default=8, type=int)
     parser.add_argument("--wt_dec", default=5e-4, type=float)
 
-
-    parser.add_argument('--sa_loss_flag', action='store_true', default=False, help='additional loss for last four frames')
-    parser.add_argument("--lambda_1", default=50, type=float, help='weight for balancing l4 loss')
-    parser.add_argument("--lambda_2", default=1, type=float, help='weight for balancing l1 loss')
-    parser.add_argument("--sa_loss_stages", default=[0,1,2,3], nargs='+', type=int, help='compute sa loss in which stages: [0, 1, 2, 3')
-    parser.add_argument("--mask_pooling_type", default='avg', type=str, help='the manner to downsample predicted masks')
-
-    parser.add_argument("--tpavi_stages", default=[], nargs='+', type=int, help='add tpavi block in which stages: [0, 1, 2, 3')
-    parser.add_argument("--tpavi_vv_flag", action='store_true', default=False, help='visual-visual self-attention')
-    parser.add_argument("--tpavi_va_flag", action='store_true', default=False, help='visual-audio cross-attention')
-
-
     parser.add_argument("--weights", type=str, default='', help='path of trained model')
     parser.add_argument('--log_dir', default='./train_logs', type=str)
 
@@ -115,10 +103,8 @@ if __name__ == "__main__":
     
     
     
-    # model = AudioClip_AVS_Model(config=cfg)
     # model = SelM_R50(config=cfg)
     # model.load_state_dict(torch.loadargs.weights))
-    
     model.cuda()
     # model = torch.nn.parallel.DistributedDataParallel(model,broadcast_buffers=False,find_unused_parameters=True).cuda()
     model.train()
@@ -128,8 +114,6 @@ if __name__ == "__main__":
     
     # for k, v in model.named_parameters():
     #         print(k, v.requires_grad)
-
-    # video backbone
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Data
@@ -141,7 +125,7 @@ if __name__ == "__main__":
                                                         pin_memory=True)
     max_step = (len(train_dataset) // args.train_batch_size) * args.max_epoches
 
-    val_dataset = S4Dataset('test')
+    val_dataset = S4Dataset('val')
     val_dataloader = torch.utils.data.DataLoader(val_dataset,
                                                         batch_size=args.val_batch_size,
                                                         shuffle=False,

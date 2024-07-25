@@ -16,7 +16,7 @@ cfg.NUM_CLASSES = 71 # 70 + 1 background
 cfg.TRAIN = edict()
 
 cfg.TRAIN.FREEZE_AUDIO_EXTRACTOR = True
-cfg.TRAIN.PRETRAINED_VGGISH_MODEL_PATH = "/home/supermicro-2/AVS/AudioClip-AVS/avss/torchvggish/vggish-10086976.pth"
+cfg.TRAIN.PRETRAINED_VGGISH_MODEL_PATH = "./avss/torchvggish/vggish-10086976.pth"
 cfg.TRAIN.PREPROCESS_AUDIO_TO_LOG_MEL = True #! notice
 cfg.TRAIN.POSTPROCESS_LOG_MEL_WITH_PCA = False
 cfg.TRAIN.PRETRAINED_PCA_PARAMS_PATH = "./torchvggish/vggish_pca_params-970ea276.pth"

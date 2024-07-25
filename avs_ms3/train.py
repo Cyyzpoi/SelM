@@ -40,36 +40,12 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", default=8, type=int)
     parser.add_argument("--wt_dec", default=5e-4, type=float)
 
-    parser.add_argument('--masked_av_flag', action='store_true',
-                        default=False, help='additional sa/masked_va loss for five frames')
-    parser.add_argument("--lambda_1", default=0, type=float,
-                        help='weight for balancing l4 loss')
-    parser.add_argument("--masked_av_stages", default=[], nargs='+', type=int,
-                        help='compute sa/masked_va loss in which stages: [0, 1, 2, 3]')
-    parser.add_argument('--threshold_flag', action='store_true',
-                        default=False, help='whether thresholding the generated masks')
-    parser.add_argument("--mask_pooling_type", default='avg',
-                        type=str, help='the manner to downsample predicted masks')
-    parser.add_argument('--norm_fea_flag', action='store_true',
-                        default=False, help='normalize audio-visual features')
-    parser.add_argument('--closer_flag', action='store_true',
-                        default=False, help='use closer loss for masked_va loss')
-    parser.add_argument('--euclidean_flag', action='store_true',
-                        default=False, help='use euclidean distance for masked_va loss')
-    parser.add_argument('--kl_flag', action='store_true',
-                        default=False, help='use kl loss for masked_va loss')
 
     parser.add_argument("--load_s4_params", action='store_true',
                         default=False, help='use S4 parameters for initilization')
     parser.add_argument("--trained_s4_model_path", type=str,
                         default='', help='pretrained S4 model')
 
-    parser.add_argument("--tpavi_stages", default=[], nargs='+',
-                        type=int, help='add tpavi block in which stages: [0, 1, 2, 3]')
-    parser.add_argument("--tpavi_vv_flag", action='store_true',
-                        default=False, help='visual-visual self-attention')
-    parser.add_argument("--tpavi_va_flag", action='store_true',
-                        default=False, help='visual-audio cross-attention')
 
     parser.add_argument("--weights", type=str, default='',
                         help='path of trained model')
@@ -173,7 +149,7 @@ if __name__ == "__main__":
                                                    pin_memory=True)
     max_step = (len(train_dataset) // args.train_batch_size) * args.max_epoches
 
-    val_dataset = MS3Dataset('test')
+    val_dataset = MS3Dataset('val')
     val_dataloader = torch.utils.data.DataLoader(val_dataset,
                                                  batch_size=args.val_batch_size,
                                                  shuffle=False,

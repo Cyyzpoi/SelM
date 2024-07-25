@@ -60,7 +60,7 @@ class BCSM(nn.Module):
 
         self.d_model = dim
 
-        self.v_fc = nn.ModuleList(
+        self.vis_linear = nn.ModuleList(
             [nn.Linear(self.d_model, self.d_model) for i in range(4)])
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -103,33 +103,33 @@ class BCSM(nn.Module):
         x3_ = x3_.view(bt//5, 5, -1)  # [B 5 256]
         x4_ = x4_.view(bt//5, 5, -1)  # [B 5 256]
 
-        audio_rnn_input = audio_feature  # [B T 256]
+        audio_input = audio_feature  # [B T 256]
         # [BT 256]
         audio_feature = audio_feature.view(-1, audio_feature.size(-1))
-        x1_, x2_, x3_, x4_ = [self.v_fc[i](x) for i, x in enumerate(
+        x1_, x2_, x3_, x4_ = [self.vis_linear[i](x) for i, x in enumerate(
             [x1_, x2_, x3_, x4_])]  # [B T 256]
 
-        audio_key_value_feature1 = self.audio_encoder[0](audio_rnn_input)
-        audio_key_value_feature2 = self.audio_encoder[1](audio_rnn_input)
-        audio_key_value_feature3 = self.audio_encoder[2](audio_rnn_input)
-        audio_key_value_feature4 = self.audio_encoder[3](audio_rnn_input)
+        audio_out1 = self.audio_encoder[0](audio_input)
+        audio_out2 = self.audio_encoder[1](audio_input)
+        audio_out3 = self.audio_encoder[2](audio_input)
+        audio_out4 = self.audio_encoder[3](audio_input)
 
-        video_key_value_feature1 = self.video_encoder[0](x1_)
-        video_key_value_feature2 = self.video_encoder[1](x2_)
-        video_key_value_feature3 = self.video_encoder[2](x3_)
-        video_key_value_feature4 = self.video_encoder[3](x4_)
+        video_out1 = self.video_encoder[0](x1_)
+        video_out2 = self.video_encoder[1](x2_)
+        video_out3 = self.video_encoder[2](x3_)
+        video_out4 = self.video_encoder[3](x4_)
 
         audio_gate1 = self.audio_gated[0](
-            audio_key_value_feature1)  # [B, T, 256]
-        audio_gate2 = self.audio_gated[1](audio_key_value_feature2)
-        audio_gate3 = self.audio_gated[2](audio_key_value_feature3)
-        audio_gate4 = self.audio_gated[3](audio_key_value_feature4)
+            audio_out1)  # [B, T, 256]
+        audio_gate2 = self.audio_gated[1](audio_out2)
+        audio_gate3 = self.audio_gated[2](audio_out3)
+        audio_gate4 = self.audio_gated[3](audio_out4)
 
         video_gate1 = self.video_gated[0](
-            video_key_value_feature1)  # [B, T, 256]
-        video_gate2 = self.video_gated[1](video_key_value_feature2)
-        video_gate3 = self.video_gated[2](video_key_value_feature3)
-        video_gate4 = self.video_gated[3](video_key_value_feature4)
+            video_out1)  # [B, T, 256]
+        video_gate2 = self.video_gated[1](video_out2)
+        video_gate3 = self.video_gated[2](video_out3)
+        video_gate4 = self.video_gated[3](video_out4)
 
         audio_gate1 = audio_gate1.reshape(bt, self.d_model, 1, 1)
         audio_gate2 = audio_gate2.transpose(1, 0)

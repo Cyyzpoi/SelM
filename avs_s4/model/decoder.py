@@ -93,7 +93,7 @@ class DProjector(nn.Module):
         self.in_dim = in_dim
         self.kernel_size = kernel_size
         
-        self.vis = nn.Sequential(  # os16 -> os4
+        self.vis = nn.Sequential(  
             nn.Upsample(scale_factor=2, mode='bilinear'),
             conv_layer(in_dim, in_dim, 3, padding=1),
             nn.Upsample(scale_factor=2, mode='bilinear'),
@@ -104,29 +104,29 @@ class DProjector(nn.Module):
         self.audio_linear = nn.Linear(audio_dim, out_dim)
 
     def forward(self, x, audio):
-        '''
-            x: b, 512, 104, 104
-            text: b, 512
-        '''
+        
+        #x: (BT, 256, H, W)
+        #audio: (BT, 256)
+        
         x = self.vis(x)  
 
         B, C, H, W = x.size()
-        # 1, b*256, 104, 104
+        
         x = x.reshape(1, B * C, H, W)
-        # txt: b, 1, (256*3*3 + 1) -> b, 1, 256, 3, 3 / b
-        audio = self.audio_linear(audio) # Eq. 8
+        
+        audio = self.audio_linear(audio) 
 
         weight, bias = audio[:, :-1], audio[:, -1]
         weight = weight.reshape(B, C, self.kernel_size, self.kernel_size)
-        # Conv2d - 1, b*256, 104, 104 -> 1, b, 104, 104
+        # Conv2d - 1, b*256, H, W -> 1, BT, H, W
         out = F.conv2d(x,
                     weight,
                     padding=0,
                     groups=B,
                     bias=bias)
             
-        # b, 1, 104, 104
-        out = out.transpose(0,1)
+        out = out.transpose(0,1)#  (B 1 H W)
+        
         return out
 
 
@@ -206,9 +206,9 @@ class LoadToken(nn.Module):
         self.norm = nn.LayerNorm(token_dim)
         self.mlp = Mlp(token_dim, token_dim*2, token_dim)
 
-    def forward(self, tokens, text, pad_mask):
+    def forward(self, tokens, audio, audio_mask):
         ltoken, ttoken = torch.split(tokens, [tokens.shape[1]-1,1], dim=1)
-        ttoken = ttoken + self.cross_attn(query=self.normq(ttoken), key=self.normk(text.permute(0,2,1)), mask=pad_mask[...,0])
+        ttoken = ttoken + self.cross_attn(query=self.normq(ttoken), key=self.normk(audio.permute(0,2,1)), mask=audio_mask[...,0])
         tokens = torch.cat((ltoken, ttoken), dim=1)
         return tokens
 
@@ -226,9 +226,9 @@ class LoadLayer(nn.Module):
         self.positional_embedding = nn.Parameter(torch.randn(pe_shape**2, token_dim) / token_dim ** 0.5)
         self.pe_shape = pe_shape
 
-    def forward(self, tokens, text, pad_mask):
+    def forward(self, tokens, audio, audio_mask):
         if self.pe_shape >=14:
-            tokens = self.loadtoken(tokens, text, pad_mask)
+            tokens = self.loadtoken(tokens, audio, audio_mask)
             tokens = self.mlp(self.norm(tokens))
         return tokens, self.positional_embedding
 
@@ -273,7 +273,7 @@ class CGAttention(nn.Module):
         return new_tokens, hit_map.reshape(b, -1, h, w)
 
 class Decoder(nn.Module):
-    def __init__(self, token_dim,num_token) -> None:
+    def __init__(self, token_dim,num_token):
         super().__init__()
 
         token_dim = token_dim
@@ -313,14 +313,14 @@ class Decoder(nn.Module):
         
         self.proj = DProjector(audio_dim=token_dim, in_dim=token_dim)
 
-    def forward(self, vis, audio, pad_mask):
+    def forward(self, vis, audio, audio_mask):
         x_c4, x_c3, x_c2, x_c1 = vis
         tokens = self.tokens.weight[None,...].expand(x_c1.shape[0], -1, -1)
         maps = []
         v = x_c4
         for load, layer,fuse,v_   in zip(self.layers,[self.cgattention1,self.cgattention2,self.cgattention3],self.fuses,[x_c3,x_c2,x_c1]):
             v = fuse(v, v_)
-            tokens, pe = load(tokens, audio, pad_mask)
+            tokens, pe = load(tokens, audio, audio_mask)
             tokens, hitmap = layer(tokens, v, pe=pe)
             maps.append(hitmap)
         

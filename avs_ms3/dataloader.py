@@ -15,9 +15,6 @@ import pdb
 
 
 
-
-
-
 def load_image_in_PIL_to_Tensor(path, mode='RGB', transform=None):
     img_PIL = Image.open(path).convert(mode)
     if transform:

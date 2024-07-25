@@ -206,9 +206,9 @@ class LoadToken(nn.Module):
         self.norm = nn.LayerNorm(token_dim)
         self.mlp = Mlp(token_dim, token_dim*2, token_dim)
 
-    def forward(self, tokens, text, pad_mask):
+    def forward(self, tokens, audio, audio_mask):
         ltoken, ttoken = torch.split(tokens, [tokens.shape[1]-1,1], dim=1)
-        ttoken = ttoken + self.cross_attn(query=self.normq(ttoken), key=self.normk(text.permute(0,2,1)), mask=pad_mask[...,0])
+        ttoken = ttoken + self.cross_attn(query=self.normq(ttoken), key=self.normk(audio.permute(0,2,1)), mask=audio_mask[...,0])
         tokens = torch.cat((ltoken, ttoken), dim=1)
         return tokens
 
@@ -226,9 +226,9 @@ class LoadLayer(nn.Module):
         self.positional_embedding = nn.Parameter(torch.randn(pe_shape**2, token_dim) / token_dim ** 0.5)
         self.pe_shape = pe_shape
 
-    def forward(self, tokens, text, pad_mask):
+    def forward(self, tokens, audio, audio_mask):
         if self.pe_shape >=14:
-            tokens = self.loadtoken(tokens, text, pad_mask)
+            tokens = self.loadtoken(tokens, audio, audio_mask)
             tokens = self.mlp(self.norm(tokens))
         return tokens, self.positional_embedding
 
@@ -313,14 +313,14 @@ class Decoder(nn.Module):
         
         self.proj = DProjector(audio_dim=token_dim, in_dim=token_dim)
 
-    def forward(self, vis, audio, pad_mask):
+    def forward(self, vis, audio, audio_mask):
         x_c4, x_c3, x_c2, x_c1 = vis
         tokens = self.tokens.weight[None,...].expand(x_c1.shape[0], -1, -1)
         maps = []
         v = x_c4
         for load, layer,fuse,v_   in zip(self.layers,[self.cgattention1,self.cgattention2,self.cgattention3],self.fuses,[x_c3,x_c2,x_c1]):
             v = fuse(v, v_)
-            tokens, pe = load(tokens, audio, pad_mask)
+            tokens, pe = load(tokens, audio, audio_mask)
             tokens, hitmap = layer(tokens, v, pe=pe)
             maps.append(hitmap)
         
