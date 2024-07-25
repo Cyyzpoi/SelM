@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partial
-from model.fusion_layer import All_Fusion_Block
+from avss.model.DAM import All_Fusion_Block
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.registry import register_model
 from timm.models.vision_transformer import _cfg
@@ -248,10 +248,10 @@ class PyramidVisionTransformerV2(nn.Module):
             setattr(self, f"block{i + 1}", block)
             setattr(self, f"norm{i + 1}", norm)
 
-        self.fusion_block1=All_Fusion_Block(dim=64)
-        self.fusion_block2=All_Fusion_Block(dim=128)
-        self.fusion_block3=All_Fusion_Block(dim=320)
-        self.fusion_block4=All_Fusion_Block(dim=512)
+        self.DAM_Fusion1=All_Fusion_Block(dim=64)
+        self.DAM_Fusion2=All_Fusion_Block(dim=128)
+        self.DAM_Fusion3=All_Fusion_Block(dim=320)
+        self.DAM_Fusion4=All_Fusion_Block(dim=512)
         
         # classification head
         # self.head = nn.Linear(embed_dims[3], num_classes) if num_classes > 0 else nn.Identity()
@@ -424,15 +424,5 @@ def pvt_v2_b5(pretrained=False, **kwargs):
         drop_rate=0.0, drop_path_rate=0.1,
         **kwargs)
     model.default_cfg = _cfg()
-    # for p in model.parameters():
-    #     p.requires_grad=False
-    # for p in model.fusion_block1.parameters():
-    #     p.requires_grad=True
-    # for p in model.fusion_block2.parameters():
-    #     p.requires_grad=True
-    # for p in model.fusion_block3.parameters():
-    #     p.requires_grad=True
-    # for p in model.fusion_block4.parameters():
-    #     p.requires_grad=True    
     return model
 

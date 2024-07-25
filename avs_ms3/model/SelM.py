@@ -7,7 +7,7 @@ from model.resnet import B2_ResNet
 from einops import rearrange, repeat
 from model.decoder import Decoder
 from model.BCSM import BCSM
-from model.fusion_layer import All_Fusion_Block
+from avs_ms3.model.DAM import DAM_Fusion_Block
 from model.pvt import pvt_v2_b5
 
 class SelM_R50(nn.Module):
@@ -33,10 +33,10 @@ class SelM_R50(nn.Module):
         self.in_proj1 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1),
                                       nn.GroupNorm(32, 256))
 
-        self.DAM_Fusion1 = All_Fusion_Block(dim=256)
-        self.DAM_Fusion2 = All_Fusion_Block(dim=512)
-        self.DAM_Fusion3 = All_Fusion_Block(dim=1024)
-        self.DAM_Fusion4 = All_Fusion_Block(dim=2048)
+        self.DAM_Fusion1 = DAM_Fusion_Block(dim=256)
+        self.DAM_Fusion2 = DAM_Fusion_Block(dim=512)
+        self.DAM_Fusion3 = DAM_Fusion_Block(dim=1024)
+        self.DAM_Fusion4 = DAM_Fusion_Block(dim=2048)
 
         self.decoder = Decoder(num_token=2, token_dim=256)
         self.audio_proj = nn.Linear(128, 256)

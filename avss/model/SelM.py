@@ -8,7 +8,7 @@ from model.pvt import pvt_v2_b5
 from einops import rearrange,repeat
 from avss.model.decoder import Decoder
 from avss.model.BCSM import BCSM
-from model.fusion_layer import All_Fusion_Block
+from avss.model.DAM import All_Fusion_Block
 
 
 class SelM_R50(nn.Module):
