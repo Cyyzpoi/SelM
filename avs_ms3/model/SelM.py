@@ -71,13 +71,13 @@ class SelM_R50(nn.Module):
         audio_feature = audio_feature.unsqueeze(2)
         audio_mask = torch.ones([BT, 1, 1], dtype=torch.bool, device='cuda')
 
-        x1 = self.resnet.layer1(x)     # BF x 256  x 56 x 56
+        x1 = self.resnet.layer1(x)     # BT x 256  x 56 x 56
         x1, audio_feature = self.DAM_Fusion1(x1, audio_feature, audio_mask)
-        x2 = self.resnet.layer2(x1)    # BF x 512  x 28 x 28
+        x2 = self.resnet.layer2(x1)    # BT x 512  x 28 x 28
         x2, audio_feature = self.DAM_Fusion2(x2, audio_feature, audio_mask)
-        x3 = self.resnet.layer3_1(x2)  # BF x 1024 x 14 x 14
+        x3 = self.resnet.layer3_1(x2)  # BT x 1024 x 14 x 14
         x3, audio_feature = self.DAM_Fusion3(x3, audio_feature, audio_mask)
-        x4 = self.resnet.layer4_1(x3)  # BF x 2048 x  7 x  7
+        x4 = self.resnet.layer4_1(x3)  # BT x 2048 x  7 x  7
         x4, audio_feature = self.DAM_Fusion4(x4, audio_feature, audio_mask)
 
         x1 = self.in_proj1(x1)
@@ -119,7 +119,7 @@ class SelM_R50(nn.Module):
                 all_params[k] = v
         assert len(all_params.keys()) == len(self.resnet.state_dict().keys())
         self.resnet.load_state_dict(all_params)
-        print(f'==> Load pretrained ResNet50 parameters from torch')
+        print(f'==> Load pretrained ResNet50 parameters')
 
 
 class SelM_PVT(nn.Module):

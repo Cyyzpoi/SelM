@@ -8,11 +8,11 @@ import math
 class DAM_Fusion_Block(nn.Module):
     def __init__(self, dim, num_heads=1, dropout=0.0):
         super(DAM_Fusion_Block, self).__init__()
-        self.fusion = Audio_Visual_Dual_Fusion(dim,  # both the visual input and for combining, num of channels
-                                               dim,  # v_in
-                                               256,  # l_in
-                                               dim,  # key
-                                               dim,  # value
+        self.fusion = Audio_Visual_Dual_Fusion(dim,  
+                                               dim,  # vis_dim
+                                               256,  # audio_dim
+                                               dim,  # key_dim
+                                               dim,  # value_dim
                                                num_heads=num_heads,
                                                dropout=dropout)
         self.gate = nn.Sequential(
@@ -27,22 +27,22 @@ class DAM_Fusion_Block(nn.Module):
             nn.GELU()
         )
 
-    def forward(self, x, l, l_mask):
-        # x [BT C H W]
+    def forward(self, x, audio, audio_mask):
+        # x (BT C H W)
         H, W = x.shape[2], x.shape[3]
         x = x.view(x.shape[0], x.shape[1], H*W)
 
         x = x.permute(0, 2, 1).contiguous()
-        # x [BT H*W C]
-        x_residual, l_residual = self.fusion(x, l, l_mask)
+        # x (BT H*W C)
+        x_residual, audio_residual = self.fusion(x, audio, audio_mask)
         # With gate and residual
         x = x + (self.gate(x_residual) * x_residual)
-        l = l + self.audio_out_conv(l_residual)
+        audio = audio + self.audio_out_conv(audio_residual)
 
         x = x.permute(0, 2, 1).contiguous()
-        x = x.view(x.shape[0], x.shape[1], H, W)  # [BT C H W]
+        x = x.view(x.shape[0], x.shape[1], H, W)  # (BT C H W)
 
-        return x, l
+        return x, audio
 
 
 class Audio_Visual_Dual_Fusion(nn.Module):
@@ -54,11 +54,11 @@ class Audio_Visual_Dual_Fusion(nn.Module):
                                          nn.Dropout(dropout)
                                          )
 
-        self.audio_visual_att = AV_Interaction(vis_dim,  # v_in
-                                               audio_channels,  # l_in
-                                               key_channels,  # key
-                                               value_channels,  # value
-                                               out_channels=value_channels,  # out
+        self.audio_visual_att = AV_Interaction(vis_dim,  
+                                               audio_channels,  
+                                               key_channels,  
+                                               value_channels,  
+                                               out_channels=value_channels,  
                                                num_heads=num_heads)
 
         self.out_conv = nn.Sequential(nn.Conv1d(value_channels, value_channels, 1, 1),
@@ -66,13 +66,13 @@ class Audio_Visual_Dual_Fusion(nn.Module):
                                       nn.Dropout(dropout)
                                       )
 
-    def forward(self, x, l, l_mask):
+    def forward(self, x, audio, audio_mask):
         # input x shape: (B, H*W, dim)
 
         vis = self.vis_project(x.permute(0, 2, 1))  # (B, dim, H*W)
 
         vis_weight, audio = self.audio_visual_att(
-            x, l, l_mask)  # (B, H*W, dim) (B, l_dim, N_l)
+            x, audio, audio_mask)  # (B, H*W, dim) (B, l_dim, N_l)
 
         vis_weight = vis_weight.permute(0, 2, 1)  # (B, dim, H*W)
 
@@ -303,35 +303,35 @@ class Audio_Sim(nn.Module):
         # audio shape: (BT, audio_channels, audio_length)
         # l_mask shape: (BT, audio_length, 1)
 
-        B, HW = x.size(0), x.size(1)
-        n_l = audio.size(2)
+        BT, HW = x.size(0), x.size(1)
+        audio_length = audio.size(2)
 
-        audio_1 = self.f_query(audio)  # (B, int_channels, N_l)
-        audio_1 = audio_1.unsqueeze(3)  # (B, int_channels, N_l, 1)
-        # (B, int_channels, N_l+, 1)
+        audio_1 = self.f_query(audio)  # (BT, int_channels, audio_length)
+        audio_1 = audio_1.unsqueeze(3)  # (BT, int_channels, audio_length, 1)
+        # (BT, int_channels, audio_length, 1)
         audio_1 = F.pad(
             audio_1, (0, 0, self.kernel[0]//2, (self.kernel[0]-1)//2), mode='replicate')
-        # (B, int_channels*self.kernel[0], N_l)
+        # (BT, int_channels*self.kernel[0], audio_length)
         audio_2 = F.unfold(audio_1, kernel_size=(self.kernel[0], 1), stride=1)
-        query = self.f_query2(audio_2)  # (B, audio_dim, N_l)
-        query = query.permute(0, 2, 1)  # (B, N_l, audio_dim)
+        query = self.f_query2(audio_2)  # (BT, audio_dim, audio_length)
+        query = query.permute(0, 2, 1)  # (BT, audio_length, audio_dim)
 
-        x = x.permute(0, 2, 1)  # (B, vis_dim, H*W)
-        key = self.f_key(x)  # (B, audio_dim, H*W)
-        query = query * audio_mask  # (B, audio_dim, N_l)
+        x = x.permute(0, 2, 1)  # (BT, vis_dim, H*W)
+        key = self.f_key(x)  # (BT, audio_dim, H*W)
+        query = query * audio_mask  # (BT, audio_dim, audio_length)
         query = query.reshape(
-            B, n_l, self.num_heads, self.audio_dim // self.num_heads).permute(0, 2, 1, 3)
-        # (b, num_heads, N_l, self.audio_dim//self.num_heads)
-        key = key.reshape(B, self.num_heads,
+            BT, audio_length, self.num_heads, self.audio_dim // self.num_heads).permute(0, 2, 1, 3)
+        # (BT, num_heads, audio_length, self.audio_dim//self.num_heads)
+        key = key.reshape(BT, self.num_heads,
                           self.audio_dim // self.num_heads, HW)
-        # (b, num_heads, self.audio_dim//self.num_heads, HW)
-        audio_mask = audio_mask.unsqueeze(1)  # (b, 1, n_l, 1)
+        # (BT, num_heads, self.audio_dim//self.num_heads, HW)
+        audio_mask = audio_mask.unsqueeze(1)  # (BT, 1, audio_length, 1)
 
-        sim_map = torch.matmul(query, key)  # (B, self.num_heads, N_l, H*W)
+        sim_map = torch.matmul(query, key)  # (BT, self.num_heads, audio_length, H*W)
         sim_map = (self.key_channels ** -.5) * sim_map  # scaled dot product
 
         # assign a very small number to padding positions
         sim_map = sim_map + (1e4 * audio_mask - 1e4)
-        sim_map = F.softmax(sim_map, dim=-1)  # (B, self.num_heads, N_l, H*W)
+        sim_map = F.softmax(sim_map, dim=-1)  # (BT, self.num_heads, audio_length, H*W)
 
         return sim_map
