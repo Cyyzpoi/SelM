@@ -153,7 +153,7 @@ if __name__ == "__main__":
                                                         sampler=train_sampler)
     max_step = (len(train_dataset) // args.train_batch_size) * args.max_epoches
 
-    val_dataset = V2Dataset('test')
+    val_dataset = V2Dataset('val')
     val_sampler=torch.utils.data.distributed.DistributedSampler(val_dataset)
     val_dataloader = torch.utils.data.DataLoader(val_dataset,
                                                         batch_size=args.val_batch_size//8,
