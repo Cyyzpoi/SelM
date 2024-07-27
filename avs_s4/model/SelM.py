@@ -7,7 +7,7 @@ from model.resnet import B2_ResNet
 from einops import rearrange, repeat
 from model.decoder import Decoder
 from model.BCSM import BCSM
-from model.fusion_layer import All_Fusion_Block
+from model.DAM import DAM_Fusion_Block
 from model.pvt import pvt_v2_b5
 
 class SelM_R50(nn.Module):
@@ -33,10 +33,10 @@ class SelM_R50(nn.Module):
         self.in_proj1 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1),
                                       nn.GroupNorm(32, 256))
 
-        self.DAM_Fusion1 = All_Fusion_Block(dim=256)
-        self.DAM_Fusion2 = All_Fusion_Block(dim=512)
-        self.DAM_Fusion3 = All_Fusion_Block(dim=1024)
-        self.DAM_Fusion4 = All_Fusion_Block(dim=2048)
+        self.DAM_Fusion1 = DAM_Fusion_Block(dim=256)
+        self.DAM_Fusion2 = DAM_Fusion_Block(dim=512)
+        self.DAM_Fusion3 = DAM_Fusion_Block(dim=1024)
+        self.DAM_Fusion4 = DAM_Fusion_Block(dim=2048)
 
         self.decoder = Decoder(num_token=2, token_dim=256)
         self.audio_proj = nn.Linear(128, 256)
@@ -119,7 +119,7 @@ class SelM_R50(nn.Module):
                 all_params[k] = v
         assert len(all_params.keys()) == len(self.resnet.state_dict().keys())
         self.resnet.load_state_dict(all_params)
-        print(f'==> Load pretrained ResNet50 parameters from torch')
+        print(f'==> Load pretrained ResNet50 parameters from {self.cfg.TRAIN.PRETRAINED_RESNET50_PATH}')
 
 
 class SelM_PVT(nn.Module):
@@ -141,7 +141,7 @@ class SelM_PVT(nn.Module):
         self.in_proj1 = nn.Sequential(nn.Conv2d(64, 256, kernel_size=1),
                                       nn.GroupNorm(32, 256))
         self.freeze(False)
-        self.decoder = Decoder(token_dim=256, num_token=2)
+        self.decoder = Decoder(token_dim=256, num_token=2,backbone='pvt')
         self.audio_proj = nn.Linear(128, 256)
         self.audio_norm = nn.LayerNorm(256)
 

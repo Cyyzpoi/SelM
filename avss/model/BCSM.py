@@ -98,10 +98,10 @@ class BCSM(nn.Module):
         x4_ = self.avgpool(x4)
         x4_ = x4_.squeeze()
 
-        x1_ = x1_.view(bt//10, 10, -1)  # [B 5 256]
-        x2_ = x2_.view(bt//10, 10, -1)  # [B 5 256]
-        x3_ = x3_.view(bt//10, 10, -1)  # [B 5 256]
-        x4_ = x4_.view(bt//10, 10, -1)  # [B 5 256]
+        x1_ = x1_.view(bt//10, 10, -1)  # [B 10 256]
+        x2_ = x2_.view(bt//10, 10, -1)  # [B 10 256]
+        x3_ = x3_.view(bt//10, 10, -1)  # [B 10 256]
+        x4_ = x4_.view(bt//10, 10, -1)  # [B 10 256]
 
         audio_input = audio_feature  # [B T 256]
         # [BT 256]

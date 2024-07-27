@@ -4,9 +4,9 @@ import torchvision.models as models
 import torch.nn.functional as F
 from model.resnet import B2_ResNet
 from model.pvt import pvt_v2_b5
-from avss.model.decoder import Decoder
-from avss.model.BCSM import BCSM
-from avss.model.DAM import DAM_Fusion_Block
+from model.decoder import Decoder
+from model.BCSM import BCSM
+from model.DAM import DAM_Fusion_Block
 
 
 class SelM_R50(nn.Module):
@@ -142,7 +142,7 @@ class SelM_R50(nn.Module):
                 all_params[k] = v
         assert len(all_params.keys()) == len(self.resnet.state_dict().keys())
         self.resnet.load_state_dict(all_params)
-        print(f'==> Load pretrained ResNet50 parameters from torch')
+        print(f'==> Load pretrained ResNet50 parameters from {self.cfg.TRAIN.PRETRAINED_RESNET50_PATH}')
  
 class SelM_PVT(nn.Module):
     def __init__(self, 
@@ -229,15 +229,25 @@ class SelM_PVT(nn.Module):
         fuse_mask = fuse_mask*vid_temporal_mask_flag
         
         return fuse_mask,feature_map_list,maps
+    
+    def initialize_pvt_weights(self,):
+        pvt_model_dict = self.encoder_backbone.state_dict()
+        pretrained_state_dicts = torch.load(
+            self.cfg.TRAIN.PRETRAINED_PVTV2_PATH)
+        # for k, v in pretrained_state_dicts['model'].items():
+        #     if k in pvt_model_dict.keys():
+        #         print(k, v.requires_grad)
+        state_dict = {k: v for k, v in pretrained_state_dicts.items()
+                      if k in pvt_model_dict.keys()}
+        pvt_model_dict.update(state_dict)
+        self.encoder_backbone.load_state_dict(pvt_model_dict)
+        print(
+            f'==> Load pvt-v2-b5 parameters pretrained on ImageNet from {self.cfg.TRAIN.PRETRAINED_PVTV2_PATH}')
  
     
     
 if __name__=="__main__":
-    model=SelM_R50(pretrained='avs_scripts\\avs_s4\AudioCLIP\\assets\AudioCLIP-Full-Training.pt').cuda()
-    img=torch.randn(10,3,224,224).cuda()
-    audio=torch.randn(10,1,45000).cuda()
-    output=model(img,audio)
-    print(output.shape)
+    model=SelM_R50().cuda()
         
     
         

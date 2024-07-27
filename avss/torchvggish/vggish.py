@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch import hub
 
 from . import vggish_input, vggish_params
-
+import pdb
 
 class VGG(nn.Module):
     def __init__(self, features):
@@ -146,7 +146,6 @@ class VGGish(VGG):
         if cfg.TRAIN.FREEZE_AUDIO_EXTRACTOR:
             state_dict =  torch.load(cfg.TRAIN.PRETRAINED_VGGISH_MODEL_PATH)
             super().load_state_dict(state_dict)
-            print(f'==> Load pretrained VGGish parameters from {cfg.TRAIN.PRETRAINED_VGGISH_MODEL_PATH}')
 
         if device is None:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -171,8 +170,9 @@ class VGGish(VGG):
 
     def forward(self, x):
         if self.preprocess:
-            print(">>> pre processing...")
+            # print(">>> pre processing...")
             x = self._preprocess(x)
+            # print(x.shape)
             x = x.to(self.device)
         x = VGG.forward(self, x)
         if self.postprocess:
@@ -183,11 +183,22 @@ class VGGish(VGG):
     def _preprocess(self, x):
         # if isinstance(x, np.ndarray):
         #     x = vggish_input.waveform_to_examples(x, fs)
-        if isinstance(x, str):
-            x = vggish_input.wavfile_to_examples(x)
-        else:
-            raise AttributeError
-        return x
+        batch_num = len(x) # x: audio_path in on batch
+        audio_fea_list = []
+        for xx in x:
+            if isinstance(xx, str):
+                xx = vggish_input.wavfile_to_examples(xx) # [5 or 10, 1, 96, 64]
+                #! notice:
+                if xx.shape[0] != 10:
+                    new_xx = torch.zeros(10, 1, 96, 64)
+                    new_xx[:xx.shape[0]] = xx
+                    audio_fea_list.append(new_xx)
+                else:
+                    audio_fea_list.append(xx)
+
+        audio_fea = torch.stack(audio_fea_list, dim=0)  #[bs, 10, 1, 96, 64]
+        audio_fea = audio_fea.view(batch_num*10, xx.shape[1], xx.shape[2], xx.shape[3]) #[bs*10, 1, 96, 64]
+        return audio_fea
 
     def _postprocess(self, x):
         return self.pproc(x)

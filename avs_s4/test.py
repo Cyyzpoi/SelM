@@ -61,7 +61,7 @@ if __name__ == "__main__":
     if not os.path.exists(script_path):
         os.makedirs(script_path, exist_ok=True)
 
-    scripts_to_save = ['train.py', 'test.py', 'config.py', 'dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/decoder.py','./model/fusion_layer.py']
+    scripts_to_save = ['train.py', 'test.py', 'config.py', 'dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/decoder.py','./model/DAM.py']
     for script in scripts_to_save:
         dst_path = os.path.join(script_path, script)
         try:
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     audio_backbone = audio_extractor(cfg=cfg,device=device)
     # Test data
     split = 'test'
-    test_dataset = S4Dataset(split)
+    test_dataset = S4Dataset(split,backbone=args.visual_backbone)
     test_dataloader = torch.utils.data.DataLoader(test_dataset,
                                                         batch_size=args.test_batch_size,
                                                         shuffle=False,
@@ -124,11 +124,11 @@ if __name__ == "__main__":
             mask = mask.cuda()
             B, frame, C, H, W = imgs.shape
             imgs = imgs.view(B*frame, C, H, W)
-            mask = mask.view(B*frame, H, W)
+            mask = mask.view(B*frame, 224, 224)
             audio = audio.view(-1, audio.shape[2], audio.shape[3],audio.shape[4])
             audio = audio_backbone(audio)
 
-            output,_,_,_= model(imgs, audio) # [5, 1, 224, 224] = [bs=1 * T=5, 1, 224, 224]
+            output,_,_= model(imgs, audio) # [5, 1, 224, 224] = [bs=1 * T=5, 1, 224, 224]
             if args.save_pred_mask:
                 mask_save_path = os.path.join(log_dir, 'pred_masks')
                 save_mask(output.squeeze(1), mask_save_path, category_list, video_name_list)

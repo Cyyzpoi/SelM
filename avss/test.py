@@ -6,7 +6,7 @@ import torch
 import numpy as np
 import argparse
 import logging
-from avss.model.SelM import SelM_R50,SelM_PVT
+from model.SelM import SelM_R50,SelM_PVT
 from config import cfg
 from color_dataloader import V2Dataset
 from torchvggish import vggish
@@ -101,9 +101,9 @@ if __name__ == "__main__":
     
     # model = SelM_R50(config=cfg)
     
-    # model.load_state_dict(torch.load('./avss/train_logs/AVSS_20240402-225123_3/checkpoints/epoch_29.pth')['model_state_dict'])
+    model.load_state_dict(torch.load(args.weights))
     model = torch.nn.DataParallel(model,device_ids=[0]).cuda()
-    # logger.info('Load trained model %s'%args.weights)
+    logger.info('Load trained model %s'%args.weights)
 
     # audio backbone
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -164,7 +164,7 @@ if __name__ == "__main__":
                 audio_feature = audio_feature * vid_temporal_mask_flag.unsqueeze(-1)
 
 
-            output, _, _,_= model(imgs, audio_feature, vid_temporal_mask_flag) # [5, 24, 224, 224] = [bs=1 * T=5, 24, 224, 224]
+            output, _, _= model(imgs, audio_feature, vid_temporal_mask_flag) # [5, 24, 224, 224] = [bs=1 * T=5, 24, 224, 224]
             if args.save_pred_mask:
                 mask_save_path = os.path.join(log_dir, 'pred_masks')
                 save_color_mask(output, mask_save_path, video_name_list, v2_pallete, resize_pred_mask, pred_mask_img_size, T=10)

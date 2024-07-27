@@ -127,10 +127,10 @@ def save_mask(pred_masks, save_base_path, video_name_list):
         os.makedirs(save_base_path, exist_ok=True)
 
     pred_masks = pred_masks.squeeze(2)
-    # pred_masks = (torch.sigmoid(pred_masks) > 0.5).int()
-    pred_masks = torch.sigmoid(pred_masks)
+    pred_masks = (torch.sigmoid(pred_masks) > 0.5).int()
+    
     pred_masks = pred_masks.view(-1, 5, pred_masks.shape[-2], pred_masks.shape[-1])
-    pred_masks = pred_masks.cpu().data.numpy()
+    pred_masks = pred_masks.cpu().data.numpy().astype(np.uint8)
     pred_masks *= 255
     bs = pred_masks.shape[0]
 
@@ -143,12 +143,8 @@ def save_mask(pred_masks, save_base_path, video_name_list):
         for video_id in range(len(one_video_masks)):
             one_mask = one_video_masks[video_id]
             output_name = "%s_%d.png"%(video_name, video_id)
-            file = open(os.path.join(mask_save_path, output_name)+'.pkl', 'wb')
-            pickle.dump(one_mask, file)
-            # im = Image.fromarray(one_mask).convert('P')
-            # im.save(os.path.join(mask_save_path, output_name), format='PNG')
-            # plt.imshow(one_mask, cmap='jet')
-            # plt.savefig(os.path.join(mask_save_path, output_name), bbox_inches='tight', pad_inches=0)
+            im = Image.fromarray(one_mask).convert('P')
+            im.save(os.path.join(mask_save_path, output_name), format='PNG')
 
 
 def save_raw_img_mask(anno_file_path, raw_img_base_path, mask_base_path, split='test', r=0.5):

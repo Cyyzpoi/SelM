@@ -88,17 +88,24 @@ class Fusion(nn.Module):
         return x
 
 class DProjector(nn.Module):
-    def __init__(self, audio_dim=512, in_dim=512, kernel_size=1):
+    def __init__(self, audio_dim=512, in_dim=512, kernel_size=1,backbone='resnet'):
         super().__init__()
         self.in_dim = in_dim
         self.kernel_size = kernel_size
-        
-        self.vis = nn.Sequential(  
-            nn.Upsample(scale_factor=2, mode='bilinear'),
-            conv_layer(in_dim, in_dim, 3, padding=1),
-            nn.Upsample(scale_factor=2, mode='bilinear'),
-            conv_layer(in_dim, in_dim, 3, padding=1),
-            nn.Conv2d(in_dim, in_dim, 1))
+        if backbone.lower()=='pvt':
+            self.vis = nn.Sequential(  
+                # nn.Upsample(scale_factor=2, mode='bilinear'),
+                # conv_layer(in_dim, in_dim, 3, padding=1),
+                nn.Upsample(scale_factor=2, mode='bilinear'),
+                conv_layer(in_dim, in_dim, 3, padding=1),
+                nn.Conv2d(in_dim, in_dim, 1))
+        else:
+            self.vis = nn.Sequential(  
+                nn.Upsample(scale_factor=2, mode='bilinear'),
+                conv_layer(in_dim, in_dim, 3, padding=1),
+                nn.Upsample(scale_factor=2, mode='bilinear'),
+                conv_layer(in_dim, in_dim, 3, padding=1),
+                nn.Conv2d(in_dim, in_dim, 1))
 
         out_dim = 1 * in_dim * kernel_size * kernel_size + 1
         self.audio_linear = nn.Linear(audio_dim, out_dim)
@@ -273,7 +280,7 @@ class CGAttention(nn.Module):
         return new_tokens, hit_map.reshape(b, -1, h, w)
 
 class Decoder(nn.Module):
-    def __init__(self, token_dim,num_token):
+    def __init__(self, token_dim,num_token,backbone='resnet'):
         super().__init__()
 
         token_dim = token_dim
@@ -283,7 +290,10 @@ class Decoder(nn.Module):
         dims = [256,256,256,256]
         # dims=[2048,1024,512,256]
         # pe_shapes = [20, 40, 80]
-        pe_shapes=[14,28,56]
+        if backbone.lower() == 'pvt':
+            pe_shapes=[28,56,112]
+        else:
+            pe_shapes=[14,28,56]
 
         self.layers = []
         for pe_shape in pe_shapes:
@@ -311,7 +321,7 @@ class Decoder(nn.Module):
         self.fuses = nn.ModuleList(self.fuses)
     
         
-        self.proj = DProjector(audio_dim=token_dim, in_dim=token_dim)
+        self.proj = DProjector(audio_dim=token_dim, in_dim=token_dim,backbone=backbone)
 
     def forward(self, vis, audio, audio_mask):
         x_c4, x_c3, x_c2, x_c1 = vis

@@ -59,8 +59,8 @@ if __name__ == "__main__":
     if not os.path.exists(script_path):
         os.makedirs(script_path, exist_ok=True)
 
-    scripts_to_save = ['train.sh', 'train.py', 'test.sh', 'test.py', 'config.py',
-                       'dataloader.py', './model/ResNet_AVSModel.py', './model/PVT_AVSModel.py', 'loss.py']
+    scripts_to_save = [ 'train.py', 'test.py', 'config.py',
+                       'dataloader.py', './model/SelM.py', './model/decoder.py','./model/BCSM.py','loss.py']
     for script in scripts_to_save:
         dst_path = os.path.join(script_path, script)
         try:
@@ -126,7 +126,7 @@ if __name__ == "__main__":
             mask = mask.cuda()
             B, frame, C, H, W = imgs.shape
             imgs = imgs.view(B*frame, C, H, W)
-            mask = mask.view(B*frame, H, W)
+            mask = mask.view(B*frame, 224, 224)
             audio = audio.view(-1, audio.shape[2],
                                audio.shape[3], audio.shape[4])
             with torch.no_grad():

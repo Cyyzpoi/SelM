@@ -30,17 +30,24 @@ def load_audio_lm(audio_lm_path):
 
 class S4Dataset(Dataset):
     """Dataset for single sound source segmentation"""
-    def __init__(self, split='train'):
+    def __init__(self, split='train',backbone='resnet'):
         super(S4Dataset, self).__init__()
         self.split = split
         self.mask_num = 1 if self.split == 'train' else 5
         df_all = pd.read_csv(cfg.DATA.ANNO_CSV, sep=',')
         self.df_split = df_all[df_all['split'] == split]
         print("{}/{} videos are used for {}".format(len(self.df_split), len(df_all), self.split))
-        self.img_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-        ])
+        if backbone.lower() == 'resnet':
+            self.img_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            ])
+        else:
+            self.img_transform = transforms.Compose([
+                transforms.Resize((448,448)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            ])
         self.mask_transform = transforms.Compose([
             transforms.ToTensor(),
         ])

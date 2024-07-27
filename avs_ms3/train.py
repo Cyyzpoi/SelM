@@ -76,8 +76,8 @@ if __name__ == "__main__":
     if not os.path.exists(script_path):
         os.makedirs(script_path, exist_ok=True)
 
-    scripts_to_save = ['train.sh', 'train.py', 'test.sh', 'test.py', 'config.py',
-                       'dataloader.py', './model/ResNet_AVSModel.py', './model/PVT_AVSModel.py', 'loss.py']
+    scripts_to_save = [ 'train.py', 'test.py', 'config.py',
+                       'dataloader.py', './model/SelM.py', './model/decoder.py','./model/BCSM.py','loss.py']
     for script in scripts_to_save:
         dst_path = os.path.join(script_path, script)
         try:
@@ -120,6 +120,12 @@ if __name__ == "__main__":
     # model = torch.nn.parallel.DistributedDataParallel(model,broadcast_buffers=False,find_unused_parameters=True).cuda()
     # model = torch.nn.DataParallel(model).cuda()
     model.train()
+    
+    model_save_path = os.path.join(
+                    checkpoint_dir, '%s_best.pth' % (args.session_name))
+    torch.save(model.state_dict(), model_save_path)
+    breakpoint()
+    
 
     audio_backbone = vggish.VGGish(cfg=cfg, device='cuda')
     audio_backbone.eval()
@@ -210,8 +216,8 @@ if __name__ == "__main__":
             # lr_scheduler.step()
             global_step += 1
             if (global_step-1) % 20 == 0:
-                train_log = 'Iter:%5d/%5d, Total_Loss:%.4f, iou_loss:%.4f, focal_loss:%.4f, hitmap_loss:%.4f,lr: %.7f' % (
-                            global_step-1, max_step, avg_meter_total_loss.pop('total_loss'), avg_meter_iou_loss.pop('iou_loss'), avg_meter_bce_loss.pop('focal_loss'), avg_meter_hitmaploss.pop('hitmap_loss'), optimizer.param_groups[0]['lr'])
+                train_log = 'Iter:%5d/%5d, Total_Loss:%.4f, iou_loss:%.4f, bce_loss:%.4f, hitmap_loss:%.4f,lr: %.7f' % (
+                            global_step-1, max_step, avg_meter_total_loss.pop('total_loss'), avg_meter_iou_loss.pop('iou_loss'), avg_meter_bce_loss.pop('bce_loss'), avg_meter_hitmaploss.pop('hitmap_loss'), optimizer.param_groups[0]['lr'])
                 logger.info(train_log)
         # lr_scheduler.step()
         # Validation:

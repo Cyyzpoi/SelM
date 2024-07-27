@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partial
-from avss.model.DAM import DAM_Fusion_Block
+from model.DAM import DAM_Fusion_Block
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.registry import register_model
 from timm.models.vision_transformer import _cfg
@@ -301,7 +301,7 @@ class PyramidVisionTransformerV2(nn.Module):
             patch_embed = getattr(self, f"patch_embed{i + 1}")
             block = getattr(self, f"block{i + 1}")
             norm = getattr(self, f"norm{i + 1}")
-            fusion = getattr(self,f"fusion_block{i+1}")
+            fusion = getattr(self,f"DAM_Fusion{i+1}")
             x, H, W = patch_embed(x)
             for blk in block:
                 x = blk(x, H, W)

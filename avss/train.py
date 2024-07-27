@@ -7,8 +7,8 @@ import numpy as np
 import argparse
 import logging
 import torch.cuda.amp as amp
-import avss.utils.misc as utils
-from avss.model.SelM import SelM_R50,SelM_PVT
+import utils.misc as utils
+from model.SelM import SelM_R50,SelM_PVT
 from config import cfg
 from color_dataloader import V2Dataset
 from torchvggish import vggish
@@ -18,10 +18,6 @@ from utils import pyutils
 from utils.utility import logger
 from utils.compute_color_metrics import calc_color_miou_fscore
 from utils.system import setup_logging
-
-
-
-
 
 
 
@@ -89,7 +85,7 @@ if __name__ == "__main__":
     if not os.path.exists(script_path):
         os.makedirs(script_path, exist_ok=True)
 
-    scripts_to_save = [ 'train.py', 'test.py', 'config.py', 'color_dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/fusion_layer.py','./model/decoder.py']
+    scripts_to_save = [ 'train.py', 'test.py', 'config.py', 'color_dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/DAM.py','./model/decoder.py']
     for script in scripts_to_save:
         dst_path = os.path.join(script_path, script)
         try:
@@ -133,7 +129,10 @@ if __name__ == "__main__":
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model.train()
     logger.info("==> Total params: %.2fM" % (sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6))
-
+    
+    model_save_path = os.path.join(checkpoint_dir, 'AVSS_R50.pth')
+    utils.save_on_master(model.module.state_dict(),model_save_path)
+    breakpoint()
 
     # video backbone
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -169,7 +168,7 @@ if __name__ == "__main__":
     model_params = model.parameters()
     optimizer = torch.optim.AdamW(model_params, args.lr)
     avg_meter_total_loss = pyutils.AverageMeter('total_loss')
-    avg_meter_sa_loss = pyutils.AverageMeter('sa_loss')
+    avg_meter_hitmap_loss = pyutils.AverageMeter('hitmap_loss')
     avg_meter_iou_loss = pyutils.AverageMeter('iou_loss')
 
     # Train
@@ -205,11 +204,11 @@ if __name__ == "__main__":
             # pdb.set_trace()
             with amp.autocast():
                 output, v_map_list,hitmaps= model(imgs, audio_feature, vid_temporal_mask_flag) # [bs*5, 24, 224, 224]
-                loss, loss_dict = Seg_Loss(output, label, loss_type='bce',hitmaps=hitmaps)
+                loss, loss_dict = Seg_Loss(output, label,gt_temporal_mask_flag,loss_type='bce',hitmaps=hitmaps)
 
             avg_meter_total_loss.add({'total_loss': loss.item()})
             avg_meter_iou_loss.add({'iou_loss': loss_dict['iou_loss']})
-            avg_meter_sa_loss.add({'sa_loss': loss_dict['sa_loss']})
+            avg_meter_hitmap_loss.add({'hitmap_loss': loss_dict['hitmap_loss']})
 
             optimizer.zero_grad()
             scaler.scale(loss).backward()
@@ -221,12 +220,12 @@ if __name__ == "__main__":
 
             global_step += 1
             if (global_step-1) % 20 == 0:
-                train_log = 'Iter:%5d/%5d, Total_Loss:%.4f, iou_loss:%.4f, sa_loss:%.4f, lr: %.6f'%(
-                            global_step-1, max_step, avg_meter_total_loss.pop('total_loss'), avg_meter_iou_loss.pop('iou_loss'), avg_meter_sa_loss.pop('sa_loss'), optimizer.param_groups[0]['lr'])
+                train_log = 'Iter:%5d/%5d, Total_Loss:%.4f, iou_loss:%.4f, hitmap_loss:%.4f, lr: %.6f'%(
+                            global_step-1, max_step, avg_meter_total_loss.pop('total_loss'), avg_meter_iou_loss.pop('iou_loss'), avg_meter_hitmap_loss.pop('hitmap_loss'), optimizer.param_groups[0]['lr'])
                 # train_log = ['Iter:%5d/%5d' % (global_step - 1, max_step),
                 #         'Total_Loss:%.4f' % (avg_meter_total_loss.pop('total_loss')),
                 #         'iou_loss:%.4f' % (avg_meter_L1.pop('iou_loss')),
-                #         'sa_loss:%.4f' % (avg_meter_L4.pop('sa_loss')),
+                #         'hitmap_loss:%.4f' % (avg_meter_L4.pop('hitmap_loss')),
                 #         'lambda_1:%.4f' % (args.lambda_1),
                 #         'lr: %.4f' % (optimizer.param_groups[0]['lr'])]
                 # print(train_log, flush=True)
@@ -312,9 +311,7 @@ if __name__ == "__main__":
                 logger.info(val_log)
                 
                 model_save_path = os.path.join(checkpoint_dir, 'epoch_%d.pth'%(epoch+1))
-                utils.save_on_master({'model_state_dict': model.module.state_dict(),
-                  'optimizer': optimizer.state_dict(),
-                  'epoch':epoch},model_save_path)
+                utils.save_on_master(model.module.state_dict(),model_save_path)
                 logger.info('save miou best model to %s'%model_save_path)
 
             model.train()

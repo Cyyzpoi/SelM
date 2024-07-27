@@ -63,7 +63,7 @@ if __name__ == "__main__":
     if not os.path.exists(script_path):
         os.makedirs(script_path, exist_ok=True)
 
-    scripts_to_save = [ 'train.py', 'test.py', 'config.py', 'dataloader.py', './model/SelM.py', './model/BCSM.py', './model/decoder.py','./model/fusion_layer.py','loss.py']
+    scripts_to_save = [ 'train.py', 'test.py', 'config.py', 'dataloader.py', './model/SelM.py', './model/BCSM.py', './model/decoder.py','./model/DAM.py','loss.py']
     for script in scripts_to_save:
         dst_path = os.path.join(script_path, script)
         try:
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Data
-    train_dataset = S4Dataset('train')
+    train_dataset = S4Dataset('train',backbone=args.visual_backbone)
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                                         batch_size=args.train_batch_size,
                                                         shuffle=True,
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                                                         pin_memory=True)
     max_step = (len(train_dataset) // args.train_batch_size) * args.max_epoches
 
-    val_dataset = S4Dataset('val')
+    val_dataset = S4Dataset('val',backbone=args.visual_backbone)
     val_dataloader = torch.utils.data.DataLoader(val_dataset,
                                                         batch_size=args.val_batch_size,
                                                         shuffle=False,
@@ -164,7 +164,7 @@ if __name__ == "__main__":
             B, frame, C, H, W = imgs.shape
             imgs = imgs.view(B*frame, C, H, W)
             # writer.add_images('origin_images',img_tensor=imgs,global_step=global_step)
-            mask = mask.view(B, H, W)
+            mask = mask.view(B, 224, 224)
             audio = audio.view(-1, audio.shape[2], audio.shape[3],audio.shape[4]) # [B*T, 1, 96, 64]
 
             with torch.no_grad():
