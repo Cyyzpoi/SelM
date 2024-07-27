@@ -130,10 +130,6 @@ if __name__ == "__main__":
     model.train()
     logger.info("==> Total params: %.2fM" % (sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6))
     
-    model_save_path = os.path.join(checkpoint_dir, 'AVSS_R50.pth')
-    utils.save_on_master(model.module.state_dict(),model_save_path)
-    breakpoint()
-
     # video backbone
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     audio_backbone = audio_extractor(cfg, device)

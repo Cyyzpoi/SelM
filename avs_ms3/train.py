@@ -121,10 +121,6 @@ if __name__ == "__main__":
     # model = torch.nn.DataParallel(model).cuda()
     model.train()
     
-    model_save_path = os.path.join(
-                    checkpoint_dir, '%s_best.pth' % (args.session_name))
-    torch.save(model.state_dict(), model_save_path)
-    breakpoint()
     
 
     audio_backbone = vggish.VGGish(cfg=cfg, device='cuda')
