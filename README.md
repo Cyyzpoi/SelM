@@ -1,6 +1,11 @@
-## <center> SelM: Selective Mechanism based Audio-Visual Segmentation </center>
+##  SelM
 
 <div align="center">
+
+<h2>
+SelM: Selective Mechanism based Audio-Visual Segmentation
+</h2>
+
 <h4>
 <b>
 Jiaxu Li, Songsong Yu, Yifan Wang*, Lijun Wang, Huchuan Lu
