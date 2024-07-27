@@ -1,4 +1,5 @@
-## SelM: Selective Mechanism based Audio-Visual Segmentation
+## <center>SelM: Selective Mechanism based Audio-Visual Segmentation
+
 <div align="center">
 <h4>
 <b>
