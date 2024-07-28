@@ -8,7 +8,7 @@ SelM: Selective Mechanism based Audio-Visual Segmentation
 
 <h4>
 <b>
-Jiaxu Li\dag, Songsong Yu\dag, Yifan Wang*, Lijun Wang, Huchuan Lu
+Jiaxu Li &dagger, Songsong Yu  &dagger, Yifan Wang*, Lijun Wang, Huchuan Lu
 </b>
 </h4>
 </div>
