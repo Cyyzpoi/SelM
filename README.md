@@ -41,14 +41,26 @@ for other required packages:
 ## Dataset and Pretrained Backbone
 For AVSBench Dataset ,please refer to this link [AVSBench](https://github.com/OpenNLPLab/AVSBench) to download the datasets
 
-For Pretrained Backbone(ResNet50、PVT-V2、VGGish),please refer to this [link](https://drive.google.com/drive/folders/1386rcFHJ1QEQQMF6bV1rXJTzy8v26RTV?usp=sharing) to download.
+For Pretrained Backbone(ResNet50、PVT-v2、VGGish),please refer to this [link](https://drive.google.com/drive/folders/1386rcFHJ1QEQQMF6bV1rXJTzy8v26RTV?usp=sharing) to download.
 
-You can placed the dataset and pretrained backbone to the directory `data` `pretrained backbone`
+You can place the dataset and pretrained backbone to the directory `data` `pretrained backbone`
 Notice : Don't forget to change the paths of data and model in `config.py`
 
 ## Pretrained Model
+You can download our pretrained SelM models by Google Drive and place it to the directory `pretrained model`
+
+|Method|Subset|mIoU|F-score|Download|
+|:---:|:---:|:---:|:---:|:---:|
+|SelM-R50|S4|76.6|86.2|[pth](https://drive.google.com/file/d/1kJI00umTGOa05HxDdrHYVPozLn32cc_o/view?usp=sharing)|
+|SelM-PVTv2|S4|83.5|91.2|[pth](https://drive.google.com/file/d/1WFcfB5cawzqLSxUJH7yP3xL2JN0ZX27V/view?usp=sharing)|
+|SelM-R50|MS3|54.5|65.6|[pth](https://drive.google.com/file/d/19YHJOec_XbJpzAe2JJs6Omm71dmRZHNr/view?usp=sharing)|
+|SelM-PVTv2|MS3|60.3|71.3|[pth](https://drive.google.com/file/d/1xtb7GRciK29RJMVHgZRhDSOhBJT-y93Y/view?usp=sharing)|
+|SelM-R50|AVSS|31.9|37.2|[pth](https://drive.google.com/file/d/1qr2_JotdX1P0EUh7WUHsBkydyQezmd7R/view?usp=sharing)|
+|SelM-PVTv2|AVSS|41.3|46.9|[pth](https://drive.google.com/file/d/1b5x7I2JJJLtuU8KPCFT1HOagiPjk2yZE/view?usp=sharing)|
 
 ## Train
 ## Test
+## Acknowledgement
+This repo is based on [AVSBench](https://github.com/OpenNLPLab/AVSBench),[RIS-DMMI](https://github.com/toggle1995/RIS-DMMI),[CGFormer](https://github.com/SooLab/CGFormer),many thanks to these wonderful works.
 ## Ciation
 

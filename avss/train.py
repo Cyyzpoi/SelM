@@ -37,11 +37,11 @@ if __name__ == "__main__":
     parser.add_argument("--visual_backbone", default="resnet", type=str, help="use resnet50 or pvt-v2 as the visual backbone")
 
     parser.add_argument("--train_batch_size", default=8, type=int)
-    parser.add_argument("--val_batch_size", default=8, type=int)
+    parser.add_argument("--val_batch_size", default=2, type=int)
     parser.add_argument("--max_epoches", default=30, type=int)
     parser.add_argument("--lr", default=2e-5, type=float)
     parser.add_argument("--num_workers", default=8, type=int)
-    parser.add_argument("--wt_dec", default=5e-4, type=float)
+    parser.add_argument("--wt_dec", default=0.01, type=float)
 
     parser.add_argument("--start_eval_epoch", default=0, type=int)
     parser.add_argument("--eval_interval", default=1, type=int)
@@ -68,48 +68,48 @@ if __name__ == "__main__":
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
+    if utils.is_main_process():
+        # Log directory
+        if not os.path.exists(args.log_dir):
+            os.makedirs(args.log_dir, exist_ok=True)
+        # Logs
+        prefix = args.session_name
+        log_dir = os.path.join(args.log_dir, '{}'.format(time.strftime(prefix + '_%Y%m%d-%H%M%S')))
+        if os.path.exists(log_dir):
+            log_dir = os.path.join(args.log_dir, '{}_{}'.format(time.strftime(prefix + '_%Y%m%d-%H%M%S'), np.random.randint(1, 10)))
+    
+        args.log_dir = log_dir
 
-    # Log directory
-    if not os.path.exists(args.log_dir):
-        os.makedirs(args.log_dir, exist_ok=True)
-    # Logs
-    prefix = args.session_name
-    log_dir = os.path.join(args.log_dir, '{}'.format(time.strftime(prefix + '_%Y%m%d-%H%M%S')))
-    if os.path.exists(log_dir):
-        log_dir = os.path.join(args.log_dir, '{}_{}'.format(time.strftime(prefix + '_%Y%m%d-%H%M%S'), np.random.randint(1, 10)))
-   
-    args.log_dir = log_dir
+        # Save scripts
+        script_path = os.path.join(log_dir, 'scripts')
+        if not os.path.exists(script_path):
+            os.makedirs(script_path, exist_ok=True)
 
-    # Save scripts
-    script_path = os.path.join(log_dir, 'scripts')
-    if not os.path.exists(script_path):
-        os.makedirs(script_path, exist_ok=True)
+        scripts_to_save = [ 'train.py', 'test.py', 'config.py', 'color_dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/DAM.py','./model/decoder.py']
+        for script in scripts_to_save:
+            dst_path = os.path.join(script_path, script)
+            try:
+                shutil.copy(script, dst_path)
+            except IOError:
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                shutil.copy(script, dst_path)
 
-    scripts_to_save = [ 'train.py', 'test.py', 'config.py', 'color_dataloader.py', './model/SelM.py', './model/BCSM.py', 'loss.py','./model/DAM.py','./model/decoder.py']
-    for script in scripts_to_save:
-        dst_path = os.path.join(script_path, script)
-        try:
-            shutil.copy(script, dst_path)
-        except IOError:
-            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-            shutil.copy(script, dst_path)
+        # Checkpoints directory
+        checkpoint_dir = os.path.join(log_dir, 'checkpoints')
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir, exist_ok=True)
+        args.checkpoint_dir = checkpoint_dir
 
-    # Checkpoints directory
-    checkpoint_dir = os.path.join(log_dir, 'checkpoints')
-    if not os.path.exists(checkpoint_dir):
-        os.makedirs(checkpoint_dir, exist_ok=True)
-    args.checkpoint_dir = checkpoint_dir
+        # Set logger
+        log_path = os.path.join(log_dir, 'log')
+        if not os.path.exists(log_path):
+            os.makedirs(log_path, exist_ok=True)
 
-    # Set logger
-    log_path = os.path.join(log_dir, 'log')
-    if not os.path.exists(log_path):
-        os.makedirs(log_path, exist_ok=True)
-
-    setup_logging(filename=os.path.join(log_path, 'log.txt'))
-    logger = logging.getLogger(__name__)
-    logger.info('==> Config: {}'.format(cfg))
-    logger.info('==> Arguments: {}'.format(args))
-    logger.info('==> Experiment: {}'.format(args.session_name))
+        setup_logging(filename=os.path.join(log_path, 'log.txt'))
+        logger = logging.getLogger(__name__)
+        logger.info('==> Config: {}'.format(cfg))
+        logger.info('==> Arguments: {}'.format(args))
+        logger.info('==> Experiment: {}'.format(args.session_name))
 
     # Model
     
@@ -130,6 +130,7 @@ if __name__ == "__main__":
     model.train()
     logger.info("==> Total params: %.2fM" % (sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6))
     
+
     # video backbone
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     audio_backbone = audio_extractor(cfg, device)
@@ -149,12 +150,10 @@ if __name__ == "__main__":
     max_step = (len(train_dataset) // args.train_batch_size) * args.max_epoches
 
     val_dataset = V2Dataset('val')
-    val_sampler=torch.utils.data.distributed.DistributedSampler(val_dataset)
     val_dataloader = torch.utils.data.DataLoader(val_dataset,
-                                                        batch_size=args.val_batch_size//8,
+                                                        batch_size=args.val_batch_size,
                                                         num_workers=args.num_workers,
-                                                        pin_memory=True,
-                                                        sampler=val_sampler)
+                                                        pin_memory=True,)
 
     N_CLASSES = train_dataset.num_classes
 
@@ -162,7 +161,7 @@ if __name__ == "__main__":
     
     # Optimizer
     model_params = model.parameters()
-    optimizer = torch.optim.AdamW(model_params, args.lr)
+    optimizer = torch.optim.AdamW(model_params, args.lr,args.wt_dec)
     avg_meter_total_loss = pyutils.AverageMeter('total_loss')
     avg_meter_hitmap_loss = pyutils.AverageMeter('hitmap_loss')
     avg_meter_iou_loss = pyutils.AverageMeter('iou_loss')
@@ -229,7 +228,7 @@ if __name__ == "__main__":
 
         # Validation:
         if epoch >= args.start_eval_epoch and epoch % args.eval_interval == 0:
-        # if epoch >= args.start_eval_epoch:
+            # if epoch >= args.start_eval_epoch:
             model.eval()
             
             miou_pc = torch.zeros((N_CLASSES)) # miou value per class (total sum)
@@ -281,16 +280,16 @@ if __name__ == "__main__":
                 f_score_noBg = torch.mean(f_score_pc[:-1]).item()
                 # pdb.set_trace()
                 
-                # if miou > max_miou:
-                #     model_save_path = os.path.join(checkpoint_dir, '%s_miou_best.pth'%(args.session_name))
-                #     torch.save(model.state_dict(), model_save_path)
-                #     best_epoch = epoch
-                #     logger.info('save miou best model to %s'%model_save_path)
-                # if (miou + f_score) > (max_miou + max_fs):
-                #     model_save_path = os.path.join(checkpoint_dir, '%s_miou_and_fscore_best.pth'%(args.session_name))
-                #     torch.save(model.state_dict(), model_save_path)
-                #     best_epoch = epoch
-                #     logger.info('save miou and fscore best model to %s'%model_save_path)     
+                if miou > max_miou and utils.is_main_process():
+                    model_save_path = os.path.join(checkpoint_dir, '%s_miou_best.pth'%(args.session_name))
+                    utils.save_on_master(model.module.state_dict(),model_save_path)
+                    best_epoch = epoch
+                    logger.info('save miou best model to %s'%model_save_path)
+                if (miou + f_score) > (max_miou + max_fs) and utils.is_main_process():
+                    model_save_path = os.path.join(checkpoint_dir, '%s_miou_and_fscore_best.pth'%(args.session_name))
+                    utils.save_on_master(model.module.state_dict(),model_save_path)
+                    best_epoch = epoch
+                    logger.info('save miou and fscore best model to %s'%model_save_path)     
 
                 miou_list.append(miou)
                 miou_noBg_list.append(miou_noBg)
@@ -306,9 +305,9 @@ if __name__ == "__main__":
                 # print(val_log)
                 logger.info(val_log)
                 
-                model_save_path = os.path.join(checkpoint_dir, 'epoch_%d.pth'%(epoch+1))
-                utils.save_on_master(model.module.state_dict(),model_save_path)
-                logger.info('save miou best model to %s'%model_save_path)
+                # model_save_path = os.path.join(checkpoint_dir, 'epoch_%d.pth'%(epoch+1))
+                # utils.save_on_master(model.module.state_dict(),model_save_path)
+                # logger.info('save model to %s'%model_save_path)
 
             model.train()
     logger.info('best val Miou {} at peoch: {}'.format(max_miou, best_epoch))
