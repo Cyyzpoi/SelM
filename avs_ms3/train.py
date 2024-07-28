@@ -130,13 +130,8 @@ if __name__ == "__main__":
                 for p in model.parameters()) / 1e6))
 
     # load pretrained S4 model
-    if args.load_s4_params:  # fine-tune single sound source segmentation model
-        model_dict = model.state_dict()
-        s4_state_dicts = torch.load(args.trained_s4_model_path)
-        state_dict = {'module.' + k: v for k,
-                      v in s4_state_dicts.items() if 'module.' + k in model_dict.keys()}
-        model_dict.update(state_dict)
-        model.load_state_dict(model_dict)
+    if args.load_s4_params: 
+        model.load_state_dict(torch.load(args.trained_s4_model_path))
         logger.info("==> Reload pretrained S4 model from %s" %
                     (args.trained_s4_model_path))
 

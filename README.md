@@ -59,7 +59,36 @@ You can download our pretrained SelM models by Google Drive and place it to the 
 |SelM-PVTv2|AVSS|41.3|46.9|[pth](https://drive.google.com/file/d/1b5x7I2JJJLtuU8KPCFT1HOagiPjk2yZE/view?usp=sharing)|
 
 ## Train
+For S4 and MS3 settings, we supply single-gpu train, run the command below  :
+```
+#S4
+cd avs_s4
+bash train.sh
+
+#MS3
+cd avs_ms3
+bash train.sh
+```
+Note that for AVSS setting, we supply muti-gpu train, to train SelM on 8 GPUs run:
+```
+cd avss
+bash train.sh
+``` 
 ## Test
+For test, remember to change the path of weights ,run:
+```
+#S4
+cd avs_s4
+bash test.sh
+
+#MS3
+cd avs_ms3
+bash test.sh
+
+#AVSS
+cd avss
+bash test.sh
+```
 ## Acknowledgement
 This repo is based on [AVSBench](https://github.com/OpenNLPLab/AVSBench),[RIS-DMMI](https://github.com/toggle1995/RIS-DMMI),[CGFormer](https://github.com/SooLab/CGFormer),many thanks to these wonderful works.
 ## Ciation

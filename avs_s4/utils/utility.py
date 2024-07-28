@@ -119,7 +119,7 @@ def Eval_Fmeasure(pred, gt, measure_path, pr_num=255):
 
 
 
-def save_mask(pred_masks, save_base_path, video_name_list):
+def save_mask(pred_masks, save_base_path, category_list, video_name_list):
     # pred_mask: [bs*5, 1, 224, 224]
     # print(f"=> {len(video_name_list)} videos in this batch")
 
@@ -135,8 +135,8 @@ def save_mask(pred_masks, save_base_path, video_name_list):
     bs = pred_masks.shape[0]
 
     for idx in range(bs):
-        video_name = video_name_list[idx]
-        mask_save_path = os.path.join(save_base_path, video_name)
+        category, video_name = category_list[idx], video_name_list[idx]
+        mask_save_path = os.path.join(save_base_path, category, video_name)
         if not os.path.exists(mask_save_path):
             os.makedirs(mask_save_path, exist_ok=True)
         one_video_masks = pred_masks[idx] # [5, 1, 224, 224]
@@ -152,15 +152,15 @@ def save_raw_img_mask(anno_file_path, raw_img_base_path, mask_base_path, split='
     df_test = df[df['split'] == split]
     count = 0
     for video_id in range(len(df_test)):
-        video_name = df_test.iloc[video_id][0]
-        raw_img_path = os.path.join(raw_img_base_path, video_name)
+        video_name, category = df_test.iloc[video_id][0], df_test.iloc[video_id][2]
+        raw_img_path = os.path.join(raw_img_base_path, split, category, video_name)
         for img_id in range(5):
-            img_name = "%s.mp4_%d.png"%(video_name, img_id + 1)
+            img_name = "%s_%d.png"%(video_name, img_id + 1)
             raw_img = cv2.imread(os.path.join(raw_img_path, img_name))
-            mask = cv2.imread(os.path.join(mask_base_path, 'pred_masks', video_name, "%s_%d.png"%(video_name, img_id)))    
+            mask = cv2.imread(os.path.join(mask_base_path, 'pred_masks', category, video_name, "%s_%d.png"%(video_name, img_id)))    
             # pdb.set_trace()
             raw_img_mask = cv2.addWeighted(raw_img, 1, mask, r, 0)
-            save_img_path = os.path.join(mask_base_path, 'img_add_masks', video_name)
+            save_img_path = os.path.join(mask_base_path, 'img_add_masks', category, video_name)
             if not os.path.exists(save_img_path):
                 os.makedirs(save_img_path, exist_ok=True)
             cv2.imwrite(os.path.join(save_img_path, img_name), raw_img_mask)
@@ -202,5 +202,4 @@ if __name__ == "__main__":
     one_real_mask = one_mask * 255
 
     pdb.set_trace()
-
 

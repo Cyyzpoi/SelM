@@ -32,14 +32,8 @@ if __name__ == "__main__":
     parser.add_argument("--visual_backbone", default="resnet", type=str, help="use resnet50 or pvt-v2 as the visual backbone")
 
     parser.add_argument("--test_batch_size", default=2, type=int)
-    parser.add_argument("--max_epoches", default=15, type=int)
-    parser.add_argument("--lr", default=0.0001, type=float)
     parser.add_argument("--num_workers", default=8, type=int)
-    parser.add_argument("--wt_dec", default=5e-4, type=float)
 
-    parser.add_argument("--tpavi_stages", default=[], nargs='+', type=int, help='add tpavi block in which stages: [0, 1, 2, 3')
-    parser.add_argument("--tpavi_vv_flag", action='store_true', default=False, help='visual-visual self-attention')
-    parser.add_argument("--tpavi_va_flag", action='store_true', default=False, help='visual-audio cross-attention')
 
     parser.add_argument("--weights",type=str)
     parser.add_argument("--save_pred_mask", action='store_true', default=False, help="save predited masks or not")

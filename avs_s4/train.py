@@ -31,10 +31,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--train_batch_size", default=2, type=int)
     parser.add_argument("--val_batch_size", default=2, type=int)
-    parser.add_argument("--max_epoches", default=30, type=int)
+    parser.add_argument("--max_epoches", default=40, type=int)
     parser.add_argument("--lr", default=2e-5, type=float)
     parser.add_argument("--num_workers", default=8, type=int)
-    parser.add_argument("--wt_dec", default=5e-4, type=float)
+    parser.add_argument("--wt_dec", default=0.05, type=float)
 
     parser.add_argument("--weights", type=str, default='', help='path of trained model')
     parser.add_argument('--log_dir', default='./train_logs', type=str)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     
     # model = SelM_R50(config=cfg)
-    # model.load_state_dict(torch.loadargs.weights))
+    # model.load_state_dict(torch.load(args.weights))
     model.cuda()
     # model = torch.nn.parallel.DistributedDataParallel(model,broadcast_buffers=False,find_unused_parameters=True).cuda()
     model.train()
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     # Optimizer
     model_params = model.parameters()
     
-    optimizer = torch.optim.AdamW(model_params, args.lr,weight_decay=0.05)
+    optimizer = torch.optim.AdamW(model_params, args.lr,weight_decay=args.wt_dec)
     # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=optimizer,milestones=[15,30,45],gamma=0.5,verbose=True)
     # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
     #                                                  lambda x: (1 - x / (len(train_dataloader) * args.max_epoches)) ** 0.9,verbose=False)

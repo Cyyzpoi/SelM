@@ -5,12 +5,7 @@ import pdb
 
 
 def F1_Dice_loss(pred_masks, first_gt_mask):
-    """dice loss for aux loss
 
-    Args:
-        pred_mask (Tensor): (bs*5, 1, h, w)
-        five_gt_masks (Tensor): (bs, 1, 1, h, w)
-    """
     assert len(pred_masks.shape) == 4
     pred_masks = torch.sigmoid(pred_masks)
 
@@ -18,7 +13,7 @@ def F1_Dice_loss(pred_masks, first_gt_mask):
     indices = indices.cuda()
     first_pred = torch.index_select(
         pred_masks, dim=0, index=indices)  # [bs, 1, 224, 224]
-    assert first_pred.requires_grad == True, "Error when indexing predited masks"
+    assert first_pred.requires_grad == True
     if len(first_gt_mask.shape) == 5:
         first_gt_mask = first_gt_mask.squeeze(1)  # [bs, 1, 224, 224]
 
@@ -36,21 +31,7 @@ def F1_Dice_loss(pred_masks, first_gt_mask):
 
 
 def sigmoid_focal_loss(pred_masks, first_gt_mask, alpha: float = 0.25, gamma: float = 2):
-    """
-    Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
-    Args:
-        inputs: A float tensor of arbitrary shape.
-                The predictions for each example.
-        targets: A float tensor with the same shape as inputs. Stores the binary
-                 classification label for each element in inputs
-                (0 for the negative class and 1 for the positive class).
-        alpha: (optional) Weighting factor in range (0,1) to balance
-                positive vs negative examples. Default = -1 (no weighting).
-        gamma: Exponent of the modulating factor (1 - p_t) to
-               balance easy vs hard examples.
-    Returns:
-        Loss tensor
-    """
+    
     assert len(pred_masks.shape) == 4
     # pred_masks = torch.sigmoid(pred_masks)
 
@@ -100,16 +81,7 @@ def F1_IoU_BCELoss(pred_masks, first_gt_mask):
 
 def Seg_Loss(pred_masks, first_gt_mask,  \
         loss_type='dice',hitmaps=None):
-    """
-    loss for single sound source segmentation
-
-    Args:
-    pred_masks: predicted masks for a batch of data, shape:[bs*5, 1, 224, 224]
-    first_gt_mask: ground truth mask of the first frame, shape: [bs, 1, 1, 224, 224]
-    a_fea_list: feature list of audio features
-    v_map_list: feature map list of the encoder or decoder output, each of shape: [bs*5, C, H, W]
-    count_stages: additional constraint loss on which stages' visual-audio features
-    """
+    
     if loss_type=='dice':
         loss_func=F1_Dice_loss
     else:

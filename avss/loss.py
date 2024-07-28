@@ -66,12 +66,8 @@ def F10_Dice_Loss(pred_masks,gt_masks,gt_temporal_mask_flag):
 
 
 def Mix_Dice_loss(pred_mask, norm_gt_mask, gt_temporal_mask_flag):
-    """dice loss for aux loss
 
-    Args:
-        pred_mask (Tensor): (bs, 1, h, w)
-        five_gt_masks (Tensor): (bs, 1, h, w)
-    """
+
     assert len(pred_mask.shape) == 4
     pred_mask = torch.sigmoid(pred_mask)
 
@@ -90,16 +86,6 @@ def Mix_Dice_loss(pred_mask, norm_gt_mask, gt_temporal_mask_flag):
 
 def Seg_Loss(pred_masks, gt_mask,
                         gt_temporal_mask_flag,loss_type='dice',hitmaps=None):
-    """
-    loss for multiple sound source segmentation
-
-    Args:
-    pred_masks: predicted masks for a batch of data, shape:[bs*10, N_CLASSES, 224, 224]
-    gt_mask: ground truth mask of the first frame (one-shot) or five frames, shape: [bs*10, 224, 224]
-    a_fea_list: feature list of audio features
-    v_map_list: feature map list of the encoder or decoder output, each of shape: [bs*10, C, H, W]
-    count_stages: additional constraint loss on which stages' visual-audio features
-    """
     
     if loss_type=='dice':
         loss_func=F10_Dice_Loss
