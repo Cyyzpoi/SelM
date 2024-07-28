@@ -26,7 +26,7 @@ You can install conda by this link [Conda](https://docs.conda.io/en/latest/minic
 
 `conda create -n selm python=3.9 `
 
-`conda activate catr`
+`conda activate selm`
 
 We use Pytorch 2.0.1 with CUDA-11.7 as our default setting, install Pytorch by pip as below
 
