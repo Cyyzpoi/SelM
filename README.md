@@ -23,21 +23,21 @@ This repository contains code for "SelM: Selective Mechanism based Audio-Visual 
 Our Code was tested upon a conda environment. 
 
 You can install conda by this link [Conda](https://docs.conda.io/en/latest/miniconda.html) and then create an environment as follows:
+```
+conda create -n selm python=3.9 
 
-`conda create -n selm python=3.9 `
-
-`conda activate selm`
-
+conda activate selm
+```
 We use Pytorch 2.0.1 with CUDA-11.7 as our default setting, install Pytorch by pip as below
-
-`pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2`
-
+```
+pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2
+```
 Notice : Mamba-ssm [Link](https://github.com/state-spaces/mamba) require CUDA 11.6+ , you might have to update your CUDA.
 
 for other required packages:
-
-`pip install -r requirements.txt`
-
+```
+pip install -r requirements.txt
+```
 ## Dataset and Pretrained Backbone
 For AVSBench Dataset ,please refer to this link [AVSBench](https://github.com/OpenNLPLab/AVSBench) to download the datasets
 
