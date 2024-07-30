@@ -161,7 +161,7 @@ if __name__ == "__main__":
     
     # Optimizer
     model_params = model.parameters()
-    optimizer = torch.optim.AdamW(model_params, args.lr,args.wt_dec)
+    optimizer = torch.optim.AdamW(model_params, args.lr,weight_decay=args.wt_dec)
     avg_meter_total_loss = pyutils.AverageMeter('total_loss')
     avg_meter_hitmap_loss = pyutils.AverageMeter('hitmap_loss')
     avg_meter_iou_loss = pyutils.AverageMeter('iou_loss')
