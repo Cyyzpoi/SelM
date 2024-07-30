@@ -8,11 +8,19 @@ SelM: Selective Mechanism based Audio-Visual Segmentation
 
 <h4>
 <b>
-Jiaxu Li, Songsong Yu, Yifan Wang*, Lijun Wang, Huchuan Lu
+Jiaxu Li<sup>†</sup>, Songsong Yu<sup>†</sup>, Yifan Wang*, Lijun Wang, Huchuan Lu
 </b>
 </h4>
+
+This repository contains code for "SelM: Selective Mechanism based Audio-Visual Segmentation" (<b>ACM MM 2024 Oral, 3.97%</b>).
+
+
+<b>IIAU Lab @ Dalian University of Technology<b>
+
+<sup>†</sup>equal contribution
+
+
 </div>
-This repository contains code for "SelM: Selective Mechanism based Audio-Visual Segmentation" (<b>ACM MM 2024 Oral</b>).
 
 ## Overview
 ![Overview](images/Overview.png)
