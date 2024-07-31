@@ -13,7 +13,7 @@ import time
 import pandas as pd
 import pdb
 from torchvision import transforms
-import pickle
+
 logger = logging.getLogger(__name__)
                 
 def save_checkpoint(state, epoch, is_best, checkpoint_dir='./models', filename='checkpoint', thres=100):
@@ -93,14 +93,14 @@ def Eval_Fmeasure(pred, gt, measure_path, pr_num=255):
         output:
             iou: size [1] (size_average=True) or [N] (size_average=False)
     """
-    # print('=> eval [FMeasure]..')
+    print('=> eval [FMeasure]..')
     pred = torch.sigmoid(pred) # =======================================[important]
     N = pred.size(0)
     beta2 = 0.3
     avg_f, img_num = 0.0, 0
     score = torch.zeros(pr_num)
     fLog = open(os.path.join(measure_path, 'FMeasure.txt'), 'w')
-    # print("{} videos in this batch".format(N))
+    print("{} videos in this batch".format(N))
 
     for img_id in range(N):
         # examples with totally black GTs are out of consideration
@@ -202,5 +202,3 @@ if __name__ == "__main__":
     one_real_mask = one_mask * 255
 
     pdb.set_trace()
-
-
