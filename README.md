@@ -99,5 +99,4 @@ bash test.sh
 ```
 ## Acknowledgement
 This repo is based on [AVSBench](https://github.com/OpenNLPLab/AVSBench),[RIS-DMMI](https://github.com/toggle1995/RIS-DMMI),[CGFormer](https://github.com/SooLab/CGFormer),many thanks to these wonderful works.
-## Ciation
 
