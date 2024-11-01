@@ -100,3 +100,15 @@ bash test.sh
 ## Acknowledgement
 This repo is based on [AVSBench](https://github.com/OpenNLPLab/AVSBench),[RIS-DMMI](https://github.com/toggle1995/RIS-DMMI),[CGFormer](https://github.com/SooLab/CGFormer),many thanks to these wonderful works.
 
+## Citation
+If you are interested in our work, you can cite our work by below bibtex
+```
+@inproceedings{li2024selm,
+  title={SelM: Selective Mechanism based Audio-Visual Segmentation},
+  author={Li, Jiaxu and Yu, Songsong and Wang, Yifan and Wang, Lijun and Lu, Huchuan},
+  booktitle={Proceedings of the 32nd ACM International Conference on Multimedia},
+  pages={3926--3935},
+  year={2024}
+}
+
+```
