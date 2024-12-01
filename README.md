@@ -1,4 +1,4 @@
-# SelM [[Paper]](https://doi.org/10.1145/3664647.3680926)
+# SelM [<u>[Paper]</u>](https://doi.org/10.1145/3664647.3680926)
 
 <div align="center">
 
